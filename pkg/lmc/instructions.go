@@ -20,6 +20,46 @@ func formatInstrStr(name string, params []string) string {
 	return buf.String()
 }
 
+// ---------- InstructionSet ----------
+
+type InstructionSet struct {
+	instructions []IInstruction
+	defInstructions []*DataInstr
+}
+
+func NewInstructionSet() *InstructionSet {
+	return &InstructionSet{
+		instructions: make([]IInstruction, 0),
+		defInstructions: make([]*DataInstr, 0),
+	}
+}
+
+func (s *InstructionSet) AddInstruction(instr IInstruction) {
+	s.instructions = append(s.instructions, instr)
+}
+
+func (s *InstructionSet) AddDef(def *DataInstr) {
+	s.defInstructions = append(s.defInstructions, def)
+}
+
+func (s *InstructionSet) String() string {
+	var buf strings.Builder
+
+	_, _ = fmt.Fprint(&buf, "; Instructions\n;\n")
+
+	for _, v := range s.instructions {
+		_, _ = fmt.Fprintf(&buf, "%s\n", v.LMCString())
+	}
+
+	_, _ = fmt.Fprint(&buf, "; Variables\n;\n")
+
+	for _, v := range s.defInstructions {
+		_, _ = fmt.Fprintf(&buf, "%s\n", v.LMCString())
+	}
+
+	return buf.String()
+}
+
 // ---------- Instructions base ----------
 
 type IInstruction interface {

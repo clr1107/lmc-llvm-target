@@ -124,3 +124,7 @@ func (m *Memory) NewMailbox(addr Address) (*Mailbox, error) {
 
 	return mailbox, m.AddMailbox(mailbox)
 }
+
+func (m *Memory) IncrCounter(x int) {
+	m.count += x
+}
