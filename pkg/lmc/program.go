@@ -27,12 +27,12 @@ func (p *Program) AddInstructions(instrs []IInstruction, defs []*DataInstr) erro
 	return nil
 }
 
-func (p *Program) NewMailbox(addr Address) (*Mailbox, error) {
-	if p.Memory.count + 2 >= 100 { // quick check, first.
+func (p *Program) NewMailbox(addr Address, identifier string) (*Mailbox, error) {
+	if p.Memory.count + 2 > 100 { // quick check, first.
 		return nil, OutOfSpaceError
 	}
 
-	if mbox, err := p.Memory.NewMailbox(addr); err != nil {
+	if mbox, err := p.Memory.NewMailbox(addr, identifier); err != nil {
 		return nil, err
 	} else {
 		def := NewDataInstr(0, mbox)

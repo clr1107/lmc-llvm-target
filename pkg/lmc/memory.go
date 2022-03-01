@@ -23,19 +23,28 @@ type Mailbox struct {
 	identifier string
 }
 
-func NewMailbox(addr Address, identifier string) *Mailbox {
-	return &Mailbox{
-		addr:       addr,
-		identifier: identifier,
-	}
-}
-
 func (m *Mailbox) Identifier() string {
 	return m.identifier
 }
 
 func (m *Mailbox) Address() Address {
 	return m.addr
+}
+
+// ---------- Labelled instruction ----------
+
+type Labelled struct {
+	identifier string
+	IInstruction
+}
+
+func (m *Labelled) Identifier() string {
+	return m.identifier
+}
+
+
+func (m *Labelled) LMCString() string {
+	return fmt.Sprintf("%s %s", m.Identifier(), m.IInstruction.LMCString())
 }
 
 // ---------- Memory ----------
@@ -68,6 +77,7 @@ func makeIdentifierGenerator() func(Address) string {
 type Memory struct {
 	mailboxes []*Mailbox
 	count     int
+	loopCount int
 	idGen     func(Address) string
 }
 
@@ -118,11 +128,29 @@ func (m *Memory) AddMailbox(mailbox *Mailbox) error {
 	return nil
 }
 
-func (m *Memory) NewMailbox(addr Address) (*Mailbox, error) {
-	identifier := m.idGen(addr)
-	mailbox := NewMailbox(addr, identifier)
+func (m *Memory) NewMailbox(addr Address, identifier string) (*Mailbox, error) {
+	if identifier == "" {
+		identifier = m.idGen(addr)
+	}
+
+	mailbox := &Mailbox{
+		addr: addr,
+		identifier: identifier,
+	}
 
 	return mailbox, m.AddMailbox(mailbox)
+}
+
+func (m *Memory) NewLabelled(instr IInstruction, identifier string) *Labelled {
+	if identifier == "" {
+		identifier = m.idGen(Address(m.loopCount))
+		m.loopCount += 1
+	}
+
+	return &Labelled{
+		identifier: identifier,
+		IInstruction: instr,
+	}
 }
 
 func (m *Memory) IncrCounter(x int) {
