@@ -42,22 +42,52 @@ func (s *InstructionSet) AddDef(def *DataInstr) {
 	s.defInstructions = append(s.defInstructions, def)
 }
 
-func (s *InstructionSet) String() string {
+func (s *InstructionSet) LMCString() string {
 	var buf strings.Builder
 
-	_, _ = fmt.Fprint(&buf, "; Instructions\n;\n")
+	// the length(longest label) + 1 is how many spaces to put before each instruction
 
+	var longest int
 	for _, v := range s.instructions {
-		_, _ = fmt.Fprintf(&buf, "%s\n", v.LMCString())
+		if c, ok := v.(*Labelled); ok {
+			if len(c.Identifier()) > longest {
+				longest = len(c.Identifier())
+			}
+		}
 	}
 
-	_, _ = fmt.Fprint(&buf, "; Variables\n;\n")
+	for _, v := range s.instructions {
+		if c, ok := v.(*Labelled); ok {
+			_, _ = fmt.Fprintf(
+				&buf,
+				"%s%s%s\n",
+				c.Identifier(),
+				strings.Repeat(" ",  longest + 1 - len(c.Identifier())),
+				c.IInstruction.LMCString(),
+			)
+		} else {
+			_, _ = fmt.Fprintf(
+				&buf,
+				"%s%s\n",
+				strings.Repeat(" ", longest+1),
+				v.LMCString(),
+			)
+		}
+	}
 
-	for _, v := range s.defInstructions {
-		_, _ = fmt.Fprintf(&buf, "%s\n", v.LMCString())
+	if len(s.defInstructions) > 0 {
+		buf.WriteRune('\n')
+
+		for _, v := range s.defInstructions {
+			_, _ = fmt.Fprintf(&buf, "%s\n", v.LMCString())
+		}
 	}
 
 	return buf.String()
+}
+
+func (s *InstructionSet) String() string {
+	return fmt.Sprintf("InstructionSet[%d,%d]", len(s.instructions), len(s.defInstructions))
 }
 
 // ---------- Instructions base ----------

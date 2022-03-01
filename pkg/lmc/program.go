@@ -39,3 +39,7 @@ func (p *Program) NewMailbox(addr Address, identifier string) (*Mailbox, error) 
 		return mbox, p.AddInstructions(nil, []*DataInstr{def})
 	}
 }
+
+func (p *Program) String() string {
+	return p.Instructions.LMCString()
+}

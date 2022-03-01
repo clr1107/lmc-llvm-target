@@ -42,7 +42,6 @@ func (m *Labelled) Identifier() string {
 	return m.identifier
 }
 
-
 func (m *Labelled) LMCString() string {
 	return fmt.Sprintf("%s %s", m.Identifier(), m.IInstruction.LMCString())
 }
