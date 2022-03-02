@@ -13,7 +13,7 @@ func NewProgram() *Program {
 }
 
 func (p *Program) AddInstructions(instrs []IInstruction, defs []*DataInstr) error {
-	if p.Memory.count+len(instrs)+len(defs) > 100 {
+	if len(p.Memory.mailboxes)+len(instrs)+len(defs) > 100 {
 		return OutOfSpaceError
 	}
 
@@ -28,7 +28,7 @@ func (p *Program) AddInstructions(instrs []IInstruction, defs []*DataInstr) erro
 }
 
 func (p *Program) NewMailbox(addr Address, identifier string) (*Mailbox, error) {
-	if p.Memory.count + 2 > 100 { // quick check, first.
+	if len(p.Memory.mailboxes) + 2 > 100 { // quick check, first.
 		return nil, OutOfSpaceError
 	}
 

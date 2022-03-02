@@ -285,3 +285,25 @@ func (i *DataInstr) String() string {
 func (i *DataInstr) LMCString() string {
 	return fmt.Sprintf("%s DAT %d", i.Box.Identifier(), i.Data)
 }
+
+// ---------- Labelled instruction ----------
+
+type Labelled struct {
+	label *Label
+	IInstruction
+}
+
+func NewLabelled(label *Label, instr IInstruction) *Labelled {
+	return &Labelled{
+		label: label,
+		IInstruction: instr,
+	}
+}
+
+func (m *Labelled) Identifier() string {
+	return m.label.Identifier()
+}
+
+func (m *Labelled) LMCString() string {
+	return fmt.Sprintf("%s %s", m.Identifier(), m.IInstruction.LMCString())
+}

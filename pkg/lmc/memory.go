@@ -7,12 +7,15 @@ import (
 )
 
 var (
-	OutOfSpaceError             = errors.New("out of space for more mailboxes")
-	MailboxAlreadyExistsAddress = func(addr Address) error {
+	OutOfSpaceError                  = errors.New("out of space for more mailboxes")
+	MailboxAlreadyExistsAddressError = func(addr Address) error {
 		return fmt.Errorf("a mailbox with address %d already exists", addr)
 	}
-	MailboxAlreadyExistsIdentifier = func(identifier string) error {
+	MailboxAlreadyExistsIdentifierError = func(identifier string) error {
 		return fmt.Errorf("a mailbox with identifier `%s' already exists", identifier)
+	}
+	LabelAlreadyExistsError = func(identifier string) error {
+		return fmt.Errorf("a label with identifier `%s' already exists", identifier)
 	}
 )
 
@@ -31,40 +34,35 @@ func (m *Mailbox) Address() Address {
 	return m.addr
 }
 
-// ---------- Labelled instruction ----------
+// --------- Label ----------
 
-type Labelled struct {
+type Label struct {
 	identifier string
-	IInstruction
 }
 
-func (m *Labelled) Identifier() string {
-	return m.identifier
-}
-
-func (m *Labelled) LMCString() string {
-	return fmt.Sprintf("%s %s", m.Identifier(), m.IInstruction.LMCString())
+func (l *Label) Identifier() string {
+	return l.identifier
 }
 
 // ---------- Memory ----------
 
-func makeIdentifierGenerator() func(Address) string {
+func makeIdentifierGenerator() func(int) string {
 	identifierSymbols := [26]rune{
 		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R',
 		'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
 	}
 
-	return func(a Address) string {
+	return func(i int) string {
 		buf := &strings.Builder{}
 
 		for {
 			s := buf.String()
 			buf.Reset()
 
-			buf.WriteRune(identifierSymbols[a%26])
+			buf.WriteRune(identifierSymbols[i%26])
 			buf.WriteString(s)
 
-			if a /= 26; a == 0 {
+			if i /= 26; i == 0 {
 				break
 			}
 		}
@@ -75,15 +73,13 @@ func makeIdentifierGenerator() func(Address) string {
 
 type Memory struct {
 	mailboxes []*Mailbox
-	count     int
-	loopCount int
-	idGen     func(Address) string
+	labels []*Label
+	idGen     func(int) string
 }
 
 func NewMemory() *Memory {
 	return &Memory{
 		mailboxes: make([]*Mailbox, 0),
-		count:     0,
 		idGen:     makeIdentifierGenerator(),
 	}
 }
@@ -108,28 +104,46 @@ func (m *Memory) GetMailboxIdentifier(identifier string) *Mailbox {
 	return nil
 }
 
+func (m *Memory) GetLabel(identifier string) *Label {
+	for _, v := range m.labels {
+		if v.Identifier() == identifier {
+			return v
+		}
+	}
+
+	return nil
+}
+
 func (m *Memory) AddMailbox(mailbox *Mailbox) error {
-	if m.count == 99 {
+	if len(m.mailboxes) == 99 {
 		return OutOfSpaceError
 	}
 
 	if m.GetMailboxAddress(mailbox.Address()) != nil {
-		return MailboxAlreadyExistsAddress(mailbox.Address())
+		return MailboxAlreadyExistsAddressError(mailbox.Address())
 	}
 
 	if m.GetMailboxIdentifier(mailbox.Identifier()) != nil {
-		return MailboxAlreadyExistsIdentifier(mailbox.Identifier())
+		return MailboxAlreadyExistsIdentifierError(mailbox.Identifier())
 	}
 
 	m.mailboxes = append(m.mailboxes, mailbox)
-	m.count += 1
 
+	return nil
+}
+
+func (m *Memory) AddLabel(label *Label) error {
+	if m.GetLabel(label.Identifier()) != nil {
+		return LabelAlreadyExistsError(label.Identifier())
+	}
+
+	m.labels = append(m.labels, label)
 	return nil
 }
 
 func (m *Memory) NewMailbox(addr Address, identifier string) (*Mailbox, error) {
 	if identifier == "" {
-		identifier = m.idGen(addr)
+		identifier = m.idGen(int(addr))
 	}
 
 	mailbox := &Mailbox{
@@ -140,18 +154,14 @@ func (m *Memory) NewMailbox(addr Address, identifier string) (*Mailbox, error) {
 	return mailbox, m.AddMailbox(mailbox)
 }
 
-func (m *Memory) NewLabelled(instr IInstruction, identifier string) *Labelled {
+func (m *Memory) NewLabel(identifier string) (*Label, error) {
 	if identifier == "" {
-		identifier = m.idGen(Address(m.loopCount))
-		m.loopCount += 1
+		identifier = m.idGen(len(m.labels))
 	}
 
-	return &Labelled{
+	label := &Label{
 		identifier: identifier,
-		IInstruction: instr,
 	}
-}
 
-func (m *Memory) IncrCounter(x int) {
-	m.count += x
+	return label, m.AddLabel(label)
 }
