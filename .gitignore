@@ -1,6 +1,7 @@
 *.iml
 .idea/
 *.o
+*.ll
 testing/
 .DS_Store
 *.so

@@ -23,18 +23,18 @@ func formatInstrStr(name string, params []string) string {
 // ---------- InstructionSet ----------
 
 type InstructionSet struct {
-	instructions    []IInstruction
+	instructions    []Instruction
 	defInstructions []*DataInstr
 }
 
 func NewInstructionSet() *InstructionSet {
 	return &InstructionSet{
-		instructions:    make([]IInstruction, 0),
+		instructions:    make([]Instruction, 0),
 		defInstructions: make([]*DataInstr, 0),
 	}
 }
 
-func (s *InstructionSet) AddInstruction(instr IInstruction) {
+func (s *InstructionSet) AddInstruction(instr Instruction) {
 	s.instructions = append(s.instructions, instr)
 }
 
@@ -63,7 +63,7 @@ func (s *InstructionSet) LMCString() string {
 				"%s%s%s\n",
 				c.Identifier(),
 				strings.Repeat(" ", longest+1-len(c.Identifier())),
-				c.IInstruction.LMCString(),
+				c.Instruction.LMCString(),
 			)
 		} else {
 			_, _ = fmt.Fprintf(
@@ -92,13 +92,13 @@ func (s *InstructionSet) String() string {
 
 // ---------- Instructions base ----------
 
-type IInstruction interface {
+type Instruction interface {
 	LMCType
 	Name() string
 }
 
 type InstructionBase struct {
-	IInstruction
+	Instruction
 	name string
 }
 
@@ -290,13 +290,13 @@ func (i *DataInstr) LMCString() string {
 
 type Labelled struct {
 	label *Label
-	IInstruction
+	Instruction
 }
 
-func NewLabelled(label *Label, instr IInstruction) *Labelled {
+func NewLabelled(label *Label, instr Instruction) *Labelled {
 	return &Labelled{
-		label:        label,
-		IInstruction: instr,
+		label:       label,
+		Instruction: instr,
 	}
 }
 
@@ -305,7 +305,7 @@ func (m *Labelled) Identifier() string {
 }
 
 func (m *Labelled) LMCString() string {
-	return fmt.Sprintf("%s %s", m.Identifier(), m.IInstruction.LMCString())
+	return fmt.Sprintf("%s %s", m.Identifier(), m.Instruction.LMCString())
 }
 
 // ---------- Branch instruction ----------

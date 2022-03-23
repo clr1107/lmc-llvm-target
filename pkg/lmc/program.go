@@ -12,7 +12,7 @@ func NewProgram(memory *Memory) *Program {
 	}
 }
 
-func (p *Program) AddInstructions(instrs []IInstruction, defs []*DataInstr) {
+func (p *Program) AddInstructions(instrs []Instruction, defs []*DataInstr) {
 	for _, v := range instrs {
 		p.Memory.instructions.AddInstruction(v)
 	}
