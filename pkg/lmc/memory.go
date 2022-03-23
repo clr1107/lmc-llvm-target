@@ -37,11 +37,26 @@ func (m *Mailbox) Address() Address {
 // --------- Label ----------
 
 type Label struct {
+	LMCType
 	identifier string
+}
+
+func NewLabel(identifier string) *Label {
+	return &Label{
+		identifier: identifier,
+	}
 }
 
 func (l *Label) Identifier() string {
 	return l.identifier
+}
+
+func (l *Label) String() string {
+	return fmt.Sprintf("Label[%s]", l.Identifier())
+}
+
+func (l *Label) LMCString() string {
+	return l.Identifier()
 }
 
 // ---------- Memory ----------
@@ -155,9 +170,6 @@ func (m *Memory) NewLabel(identifier string) (*Label, error) {
 		identifier = m.idGen(len(m.labels))
 	}
 
-	label := &Label{
-		identifier: identifier,
-	}
-
+	label := NewLabel(identifier)
 	return label, m.AddLabel(label)
 }

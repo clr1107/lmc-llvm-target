@@ -23,13 +23,13 @@ func formatInstrStr(name string, params []string) string {
 // ---------- InstructionSet ----------
 
 type InstructionSet struct {
-	instructions []IInstruction
+	instructions    []IInstruction
 	defInstructions []*DataInstr
 }
 
 func NewInstructionSet() *InstructionSet {
 	return &InstructionSet{
-		instructions: make([]IInstruction, 0),
+		instructions:    make([]IInstruction, 0),
 		defInstructions: make([]*DataInstr, 0),
 	}
 }
@@ -62,7 +62,7 @@ func (s *InstructionSet) LMCString() string {
 				&buf,
 				"%s%s%s\n",
 				c.Identifier(),
-				strings.Repeat(" ",  longest + 1 - len(c.Identifier())),
+				strings.Repeat(" ", longest+1-len(c.Identifier())),
 				c.IInstruction.LMCString(),
 			)
 		} else {
@@ -295,7 +295,7 @@ type Labelled struct {
 
 func NewLabelled(label *Label, instr IInstruction) *Labelled {
 	return &Labelled{
-		label: label,
+		label:        label,
 		IInstruction: instr,
 	}
 }
@@ -306,4 +306,49 @@ func (m *Labelled) Identifier() string {
 
 func (m *Labelled) LMCString() string {
 	return fmt.Sprintf("%s %s", m.Identifier(), m.IInstruction.LMCString())
+}
+
+// ---------- Branch instruction ----------
+
+type BranchType uint
+
+const (
+	BRAlways   BranchType = iota // Branch Always
+	BRPositive                   // Branch if acc positive
+	BRZero                       // Branch if acc zero
+)
+
+type BranchInstr struct {
+	InstructionBase
+	BranchType BranchType
+	label      *Label
+}
+
+func NewBranchInstr(branchType BranchType, label *Label) *BranchInstr {
+	return &BranchInstr{
+		BranchType: branchType,
+		label:      label,
+	}
+}
+
+func (b *BranchInstr) Identifier() string {
+	return b.label.Identifier()
+}
+
+func (b *BranchInstr) LMCString() string {
+	var t string
+
+	switch b.BranchType {
+	case BRAlways:
+		t = "BRA"
+		break
+	case BRPositive:
+		t = "BRP"
+		break
+	case BRZero:
+		t = "BRZ"
+		break
+	}
+
+	return fmt.Sprintf("%s %s", t, b.label.Identifier())
 }
