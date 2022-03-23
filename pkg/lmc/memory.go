@@ -1,13 +1,11 @@
 package lmc
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
 
 var (
-	OutOfSpaceError                  = errors.New("out of space for more mailboxes")
 	MailboxAlreadyExistsAddressError = func(addr Address) error {
 		return fmt.Errorf("a mailbox with address %d already exists", addr)
 	}
@@ -95,6 +93,7 @@ func makeIdentifierGenerator() func(int) string {
 
 type Memory struct {
 	mailboxes []*Mailbox
+	instructions *InstructionSet
 	labels []*Label
 	idGen     func(int) string
 }
@@ -102,12 +101,17 @@ type Memory struct {
 func NewMemory(idGen func(int) string) *Memory {
 	return &Memory{
 		mailboxes: make([]*Mailbox, 0),
+		instructions: NewInstructionSet(),
 		idGen:     idGen,
 	}
 }
 
 func NewBasicMemory() *Memory {
 	return NewMemory(makeIdentifierGenerator())
+}
+
+func (m *Memory) GetInstructions() *InstructionSet {
+	return m.instructions
 }
 
 func (m *Memory) GetMailboxAddress(addr Address) *Mailbox {

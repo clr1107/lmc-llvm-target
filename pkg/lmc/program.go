@@ -2,27 +2,23 @@ package lmc
 
 type Program struct {
 	Memory       *Memory
-	Instructions *InstructionSet
 	constants map[Value]*Mailbox
 }
 
 func NewProgram(memory *Memory) *Program {
 	return &Program{
 		Memory:       memory,
-		Instructions: NewInstructionSet(),
 		constants: make(map[Value]*Mailbox, 0),
 	}
 }
 
-func (p *Program) AddInstructions(instrs []IInstruction, defs []*DataInstr) error {
+func (p *Program) AddInstructions(instrs []IInstruction, defs []*DataInstr) {
 	for _, v := range instrs {
-		p.Instructions.AddInstruction(v)
+		p.Memory.instructions.AddInstruction(v)
 	}
 	for _, v := range defs {
-		p.Instructions.AddDef(v)
+		p.Memory.instructions.AddDef(v)
 	}
-
-	return nil
 }
 
 func (p *Program) NewMailbox(addr Address, identifier string) (*Mailbox, error) {
@@ -31,7 +27,9 @@ func (p *Program) NewMailbox(addr Address, identifier string) (*Mailbox, error) 
 		return mbox, err
 	} else {
 		def := NewDataInstr(0, mbox)
-		return mbox, p.AddInstructions(nil, []*DataInstr{def})
+		p.AddInstructions(nil, []*DataInstr{def})
+
+		return mbox, nil
 	}
 }
 
@@ -54,10 +52,12 @@ func (p *Program) Constant(value Value) (*Mailbox, error) {
 		}
 
 		def := NewDataInstr(value, mbox)
-		return mbox, p.AddInstructions(nil, []*DataInstr{def})
+		p.AddInstructions(nil, []*DataInstr{def})
+
+		return mbox, nil
 	}
 }
 
 func (p *Program) String() string {
-	return p.Instructions.LMCString()
+	return p.Memory.instructions.LMCString()
 }
