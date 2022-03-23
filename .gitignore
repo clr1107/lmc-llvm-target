@@ -2,3 +2,5 @@
 .idea/
 *.o
 testing/
+.DS_Store
+*.so

@@ -115,10 +115,6 @@ func (m *Memory) GetLabel(identifier string) *Label {
 }
 
 func (m *Memory) AddMailbox(mailbox *Mailbox) error {
-	if len(m.mailboxes) == 99 {
-		return OutOfSpaceError
-	}
-
 	if m.GetMailboxAddress(mailbox.Address()) != nil {
 		return MailboxAlreadyExistsAddressError(mailbox.Address())
 	}
