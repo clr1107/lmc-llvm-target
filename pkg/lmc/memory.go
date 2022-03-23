@@ -26,6 +26,13 @@ type Mailbox struct {
 	identifier string
 }
 
+func NewMailbox(addr Address, identifier string) *Mailbox {
+	return &Mailbox{
+		addr: addr,
+		identifier: identifier,
+	}
+}
+
 func (m *Mailbox) Identifier() string {
 	return m.identifier
 }
@@ -62,7 +69,7 @@ func (l *Label) LMCString() string {
 // ---------- Memory ----------
 
 func makeIdentifierGenerator() func(int) string {
-	identifierSymbols := [26]rune{
+	identifierSymbols := [...]rune{
 		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R',
 		'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
 	}
@@ -92,11 +99,15 @@ type Memory struct {
 	idGen     func(int) string
 }
 
-func NewMemory() *Memory {
+func NewMemory(idGen func(int) string) *Memory {
 	return &Memory{
 		mailboxes: make([]*Mailbox, 0),
-		idGen:     makeIdentifierGenerator(),
+		idGen:     idGen,
 	}
+}
+
+func NewBasicMemory() *Memory {
+	return NewMemory(makeIdentifierGenerator())
 }
 
 func (m *Memory) GetMailboxAddress(addr Address) *Mailbox {
@@ -152,24 +163,19 @@ func (m *Memory) AddLabel(label *Label) error {
 	return nil
 }
 
-func (m *Memory) NewMailbox(addr Address, identifier string) (*Mailbox, error) {
+func (m *Memory) NewMailbox(addr Address, identifier string) *Mailbox {
 	if identifier == "" {
 		identifier = m.idGen(int(addr))
 	}
 
-	mailbox := &Mailbox{
-		addr: addr,
-		identifier: identifier,
-	}
-
-	return mailbox, m.AddMailbox(mailbox)
+	return NewMailbox(addr, identifier)
 }
 
-func (m *Memory) NewLabel(identifier string) (*Label, error) {
+func (m *Memory) NewLabel(identifier string) *Label {
 	if identifier == "" {
-		identifier = m.idGen(len(m.labels))
+		identifier = "l_" + m.idGen(len(m.labels))
 	}
 
 	label := NewLabel(identifier)
-	return label, m.AddLabel(label)
+	return label
 }
