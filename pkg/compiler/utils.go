@@ -1,6 +1,11 @@
-package main
+package compiler
 
-import "github.com/llir/llvm/ir"
+import (
+	"github.com/clr1107/lmc-llvm-target/lmc"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/value"
+	"reflect"
+)
 
 func GetLLFunc(funcs []*ir.Func, name string) *ir.Func {
 	for _, v := range funcs {
@@ -34,4 +39,43 @@ func GetLLEntry(module *ir.Module) *ir.Func {
 	}
 
 	return f
+}
+
+func ReflectGetLocalID(x interface{}) (lmc.Address, error) {
+	f := reflect.ValueOf(x).MethodByName("ID")
+	if f.IsZero() {
+		return -1, NonexistentPropertyError("#ID()")
+	}
+
+	res := f.Call(nil)
+	if len(res) != 1 {
+		return -1, NonexistentPropertyError("#ID() -> 1")
+
+	}
+
+	id := res[0]
+	if id.Kind() != reflect.Int64 {
+		return -1, IncorrectTypesError("ID[int64]", "ID")
+	}
+
+	return lmc.Address(id.Int()), nil
+}
+
+func GetValueMailbox(prog *lmc.Program, val value.Value) (*lmc.Mailbox, error) {
+	switch val.(type) {
+	case *ir.InstAlloca, *ir.InstLoad:
+		id, err := ReflectGetLocalID(val)
+		if err != nil {
+			return nil, err
+		}
+
+		mbox := prog.Memory.GetMailboxAddress(id)
+		if mbox == nil {
+			return nil, UnknownMailboxError(id)
+		}
+
+		return mbox, nil
+	default:
+		return nil, InvalidLLTypeError(val.Type().Name()) // todo: error needs to be invalid LL type
+	}
 }

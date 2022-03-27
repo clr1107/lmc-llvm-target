@@ -56,6 +56,10 @@ func (s *InstructionSet) LMCString() string {
 		}
 	}
 
+	if longest == 0 {
+		longest = -1
+	}
+
 	for _, v := range s.instructions {
 		if c, ok := v.(*Labelled); ok {
 			_, _ = fmt.Fprintf(

@@ -1,4 +1,4 @@
-package main
+package compiler
 
 import (
 	"github.com/clr1107/lmc-llvm-target/lmc"
@@ -10,27 +10,12 @@ import (
 type LLInstructionWrapper interface {
 	LMCInstructions() []lmc.Instruction
 	LMCDefs() []*lmc.DataInstr
-	AddToLL(prog *lmc.Program)
 	LLBase() []ir.Instruction
 }
 
 type LLInstructionBase struct {
 	LLInstructionWrapper
-	instrs []lmc.Instruction
-	defs []*lmc.DataInstr
 	base []ir.Instruction
-}
-
-func (base *LLInstructionBase) AddToLL(prog *lmc.Program) {
-	prog.AddInstructions(base.LMCInstructions(), base.LMCDefs())
-}
-
-func (base *LLInstructionBase) LMCInstructions() []lmc.Instruction {
-	return base.instrs
-}
-
-func (base *LLInstructionBase) LMCDefs() []*lmc.DataInstr {
-	return base.defs
 }
 
 func (base *LLInstructionBase) LLBase() []ir.Instruction {
@@ -44,4 +29,68 @@ type LLBinaryInstr struct {
 	x *lmc.Mailbox
 	y *lmc.Mailbox
 	dst *lmc.Mailbox
+}
+
+func WrapBinaryInst(prog *lmc.Program, instr *ir.InstAdd) (*LLBinaryInstr, error) {
+	var err error
+	var x *lmc.Mailbox
+	var y *lmc.Mailbox
+	var dst *lmc.Mailbox
+
+	x, err = GetValueMailbox(prog, instr.X)
+	if err != nil {
+		return nil, err
+	}
+
+	y, err = GetValueMailbox(prog, instr.Y)
+	if err != nil {
+		return nil, err
+	}
+
+	dst = prog.Memory.GetMailboxAddress(lmc.Address(instr.ID()))
+	if dst == nil {
+		return nil, UnknownMailboxError(lmc.Address(instr.ID()))
+	}
+
+	return &LLBinaryInstr{
+		LLInstructionBase: LLInstructionBase{
+			base: []ir.Instruction{instr},
+		},
+		x: x,
+		y: y,
+		dst: dst,
+	}, nil
+}
+
+// ---------- LLInstAdd ----------
+
+type LLInstAdd struct {
+	LLBinaryInstr
+	instrs []lmc.Instruction
+	defs []*lmc.DataInstr
+}
+
+func WrapLLInstAdd(prog *lmc.Program, instr *ir.InstAdd) (*LLInstAdd, error) {
+	wrapped, err := WrapBinaryInst(prog, instr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LLInstAdd{
+		LLBinaryInstr: *wrapped,
+		instrs: []lmc.Instruction{
+			lmc.NewLoadInstr(wrapped.x),
+			lmc.NewAddInstr(wrapped.y),
+			lmc.NewStoreInstr(wrapped.dst),
+		},
+		defs: nil,
+	}, err
+}
+
+func (instr *LLInstAdd) LMCInstructions() []lmc.Instruction {
+	return instr.instrs
+}
+
+func (instr *LLInstAdd) LMCDefs() []*lmc.DataInstr {
+	return instr.defs
 }
