@@ -11,11 +11,15 @@ import (
 type LLInstAdd struct {
 	LLBinaryInstr
 	instrs []lmc.Instruction
-	defs []*lmc.DataInstr
 }
 
 func WrapLLInstAdd(compiler *c.Compiler, instr *ir.InstAdd) (*LLInstAdd, error) {
-	wrapped, err := WrapBinaryInstr(compiler, instr)
+	dst := compiler.Prog.Memory.GetMailboxAddress(lmc.Address(instr.ID()))
+	if dst == nil {
+		return nil, c.UnknownMailboxError(lmc.Address(instr.ID()))
+	}
+
+	wrapped, err := WrapBinaryInstr(compiler, instr, instr.X, instr.Y, dst)
 	if err != nil {
 		return nil, err
 	}
@@ -27,8 +31,7 @@ func WrapLLInstAdd(compiler *c.Compiler, instr *ir.InstAdd) (*LLInstAdd, error) 
 			lmc.NewAddInstr(wrapped.y),
 			lmc.NewStoreInstr(wrapped.dst),
 		},
-		defs: nil,
-	}, err
+	}, nil
 }
 
 func (instr *LLInstAdd) LMCInstructions() []lmc.Instruction {
@@ -36,5 +39,5 @@ func (instr *LLInstAdd) LMCInstructions() []lmc.Instruction {
 }
 
 func (instr *LLInstAdd) LMCDefs() []*lmc.DataInstr {
-	return instr.defs
+	return nil
 }

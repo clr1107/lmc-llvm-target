@@ -6,6 +6,41 @@ import (
 	"github.com/llir/llvm/ir"
 )
 
+// ---------- LLInstStore ----------
+
+type LLInstStore struct {
+	LLUnaryInstr
+	instrs []lmc.Instruction
+}
+
+func WrapLLInstStore(compiler *c.Compiler, instr *ir.InstStore) (*LLInstStore, error) {
+	dst, err := c.MailboxFromLLValue(compiler, instr.Dst)
+	if err != nil {
+		return nil, err
+	}
+
+	wrapped, err := WrapUnaryInstr(compiler, instr, instr.Src, dst)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LLInstStore{
+		LLUnaryInstr: *wrapped,
+		instrs: []lmc.Instruction{
+			lmc.NewLoadInstr(wrapped.x),
+			lmc.NewStoreInstr(wrapped.dst),
+		},
+	}, nil
+}
+
+func (instr *LLInstStore) LMCInstructions() []lmc.Instruction {
+	return instr.instrs
+}
+
+func (instr *LLInstStore) LMCDefs() []*lmc.DataInstr {
+	return nil
+}
+
 // ---------- LLInstAlloca ----------
 
 type LLInstAlloca struct {
@@ -15,10 +50,8 @@ type LLInstAlloca struct {
 }
 
 func WrapInstAlloca(compiler *c.Compiler, instr *ir.InstAlloca) (*LLInstAlloca, error) {
-	addr := lmc.Address(instr.ID())
-	box, err := compiler.Prog.NewMailbox(addr, "")
-
-	if err != nil {
+	box := lmc.NewMailbox(0, "")
+	if err := compiler.Prog.Memory.AddMailbox(box); err != nil {
 		return nil, err
 	}
 
@@ -27,7 +60,9 @@ func WrapInstAlloca(compiler *c.Compiler, instr *ir.InstAlloca) (*LLInstAlloca, 
 			base: []ir.Instruction{instr},
 		},
 		box: box,
-		defs: []*lmc.DataInstr{lmc.NewDataInstr(0, box)},
+		defs: []*lmc.DataInstr{
+			lmc.NewDataInstr(0, box),
+		},
 	}, nil
 }
 

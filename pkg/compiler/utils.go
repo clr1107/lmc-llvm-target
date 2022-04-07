@@ -68,7 +68,7 @@ func MailboxFromLLValue(compiler *Compiler, val value.Value) (*lmc.Mailbox, erro
 		return compiler.GetTempBox()
 	case *constant.Int:
 		return compiler.Prog.Constant(lmc.Value(val.(*constant.Int).X.Int64()))
-	case *ir.InstAlloca, *ir.InstLoad:
+	case ir.Instruction: // last try, just use reflection lol
 		id, err := ReflectGetLocalID(val)
 		if err != nil {
 			return nil, err
