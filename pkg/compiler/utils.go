@@ -4,7 +4,6 @@ import (
 	"github.com/clr1107/lmc-llvm-target/lmc"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/value"
 	"reflect"
 )
 
@@ -62,14 +61,14 @@ func ReflectGetLocalID(x interface{}) (lmc.Address, error) {
 	return lmc.Address(id.Int()), nil
 }
 
-func MailboxFromLLValue(compiler *Compiler, val value.Value) (*lmc.Mailbox, error) {
-	switch val.(type) {
+func GetMailboxFromLL(compiler *Compiler, ll interface{}) (*lmc.Mailbox, error) {
+	switch ll.(type) {
 	case *constant.Null:
 		return compiler.GetTempBox()
 	case *constant.Int:
-		return compiler.Prog.Constant(lmc.Value(val.(*constant.Int).X.Int64()))
+		return compiler.Prog.Constant(lmc.Value(ll.(*constant.Int).X.Int64()))
 	case ir.Instruction: // last try, just use reflection lol
-		id, err := ReflectGetLocalID(val)
+		id, err := ReflectGetLocalID(ll)
 		if err != nil {
 			return nil, err
 		}
@@ -81,6 +80,6 @@ func MailboxFromLLValue(compiler *Compiler, val value.Value) (*lmc.Mailbox, erro
 
 		return mbox, nil
 	default:
-		return nil, InvalidLLTypeError(val.Type().Name())
+		return nil, InvalidLLTypeError(reflect.TypeOf(ll).String())
 	}
 }

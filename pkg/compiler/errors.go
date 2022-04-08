@@ -3,6 +3,8 @@ package compiler
 import (
 	"fmt"
 	"github.com/clr1107/lmc-llvm-target/lmc"
+	"github.com/llir/llvm/ir"
+	"reflect"
 	"strings"
 )
 
@@ -18,5 +20,8 @@ var (
 	}
 	UnknownMailboxError = func(addr lmc.Address) error {
 		return fmt.Errorf("unknown mailbox with address %d\n", addr)
+	}
+	UnknownLLInstructionError = func(instr ir.Instruction) error {
+		return fmt.Errorf("unknown LL instruction type %s", reflect.TypeOf(instr))
 	}
 )

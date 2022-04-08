@@ -1,6 +1,8 @@
 package compiler
 
-import "github.com/clr1107/lmc-llvm-target/lmc"
+import (
+	"github.com/clr1107/lmc-llvm-target/lmc"
+)
 
 type Compiler struct {
 	Prog *lmc.Program
