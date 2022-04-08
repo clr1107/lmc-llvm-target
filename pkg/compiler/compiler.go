@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"github.com/clr1107/lmc-llvm-target/compiler/instructions"
 	"github.com/clr1107/lmc-llvm-target/lmc"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
@@ -52,5 +53,22 @@ func (compiler *Compiler) GetMailboxFromLL(ll interface{}) (*lmc.Mailbox, error)
 		return mbox, nil
 	default:
 		return nil, InvalidLLTypeError(reflect.TypeOf(ll).String())
+	}
+}
+
+func (compiler *Compiler) CompileInst(instr ir.Instruction) (instructions.LLInstructionWrapper, error) {
+	switch instr.(type) {
+	// arithmetic
+	case *ir.InstAdd:
+		return compiler.WrapLLInstAdd(instr.(*ir.InstAdd))
+	// memory
+	case *ir.InstAlloca:
+		return compiler.WrapLLInstAlloca(instr.(*ir.InstAlloca))
+	case *ir.InstLoad:
+		return compiler.WrapLLInstLoad(instr.(*ir.InstLoad))
+	case *ir.InstStore:
+		return compiler.WrapLLInstStore(instr.(*ir.InstStore))
+	default:
+		return nil, UnknownLLInstructionError(instr)
 	}
 }

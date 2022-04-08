@@ -115,9 +115,11 @@ func (m *Memory) GetInstructions() *InstructionSet {
 }
 
 func (m *Memory) GetMailboxAddress(addr Address) *Mailbox {
-	for _, v := range m.mailboxes {
-		if v.Address() == addr {
-			return v
+	if addr >= 0 {
+		for _, v := range m.mailboxes {
+			if v.Address() == addr {
+				return v
+			}
 		}
 	}
 
