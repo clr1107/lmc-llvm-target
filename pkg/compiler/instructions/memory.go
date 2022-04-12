@@ -10,14 +10,16 @@ import (
 type WInstAlloca struct {
 	LLInstructionBase
 	Box *lmc.Mailbox
+	memoryOps []*lmc.MemoryOp
 }
 
-func NewWInstAlloca(instr *ir.InstAlloca, box *lmc.Mailbox) *WInstAlloca {
+func NewWInstAlloca(instr *ir.InstAlloca, box *lmc.Mailbox, ops []*lmc.MemoryOp) *WInstAlloca {
 	return &WInstAlloca{
 		LLInstructionBase: LLInstructionBase{
 			base: []ir.Instruction{instr},
 		},
 		Box: box,
+		memoryOps: ops,
 	}
 }
 
@@ -25,10 +27,8 @@ func (w *WInstAlloca) LMCInstructions() []lmc.Instruction {
 	return nil
 }
 
-func (w *WInstAlloca) LMCDefs() []*lmc.DataInstr {
-	return []*lmc.DataInstr{
-		lmc.NewDataInstr(0, w.Box),
-	}
+func (w *WInstAlloca) LMCOps() []*lmc.MemoryOp {
+	return w.memoryOps
 }
 
 // ---------- WInstLoad ----------
@@ -37,17 +37,17 @@ type WInstLoad struct {
 	LLInstructionBase
 	X *lmc.Mailbox
 	Dst *lmc.Mailbox
-	newDstFlag bool
+	memoryOps []*lmc.MemoryOp
 }
 
-func NewWInstLoad(instr *ir.InstLoad, x *lmc.Mailbox, dst *lmc.Mailbox, newDstFlag bool) *WInstLoad {
+func NewWInstLoad(instr *ir.InstLoad, x *lmc.Mailbox, dst *lmc.Mailbox, ops []*lmc.MemoryOp) *WInstLoad {
 	return &WInstLoad{
 		LLInstructionBase: LLInstructionBase{
 			base: []ir.Instruction{instr},
 		},
 		X: x,
 		Dst: dst,
-		newDstFlag: newDstFlag,
+		memoryOps: ops,
 	}
 }
 
@@ -58,14 +58,8 @@ func (w *WInstLoad) LMCInstructions() []lmc.Instruction {
 	}
 }
 
-func (w *WInstLoad) LMCDefs() []*lmc.DataInstr {
-	if w.newDstFlag {
-		return []*lmc.DataInstr{
-			lmc.NewDataInstr(0, w.Dst),
-		}
-	} else {
-		return nil
-	}
+func (w *WInstLoad) LMCOps() []*lmc.MemoryOp {
+	return w.memoryOps
 }
 
 // ---------- WInstStore ----------
@@ -74,15 +68,17 @@ type WInstStore struct {
 	LLInstructionBase
 	X *lmc.Mailbox
 	Dst *lmc.Mailbox
+	memoryOps []*lmc.MemoryOp
 }
 
-func NewWInstStore(instr *ir.InstStore, x *lmc.Mailbox, dst *lmc.Mailbox) *WInstStore {
+func NewWInstStore(instr *ir.InstStore, x *lmc.Mailbox, dst *lmc.Mailbox, ops []*lmc.MemoryOp) *WInstStore {
 	return &WInstStore{
 		LLInstructionBase: LLInstructionBase{
 			base: []ir.Instruction{instr},
 		},
 		X: x,
 		Dst: dst,
+		memoryOps: ops,
 	}
 }
 
@@ -93,6 +89,6 @@ func (w *WInstStore) LMCInstructions() []lmc.Instruction {
 	}
 }
 
-func (w *WInstStore) LMCDefs() []*lmc.DataInstr {
-	return nil
+func (w *WInstStore) LMCOps() []*lmc.MemoryOp {
+	return w.memoryOps
 }

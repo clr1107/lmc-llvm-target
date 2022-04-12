@@ -11,19 +11,19 @@ type WInstAdd struct {
 	LLInstructionBase
 	X *lmc.Mailbox
 	Y *lmc.Mailbox
-	Dst *lmc.Mailbox
-	newDstFlag bool
+	Dst       *lmc.Mailbox
+	memoryOps []*lmc.MemoryOp
 }
 
-func NewWInstAdd(instr *ir.InstAdd, x *lmc.Mailbox, y *lmc.Mailbox, dst *lmc.Mailbox, newDstFlag bool) *WInstAdd {
+func NewWInstAdd(instr *ir.InstAdd, x *lmc.Mailbox, y *lmc.Mailbox, dst *lmc.Mailbox, ops []*lmc.MemoryOp) *WInstAdd {
 	return &WInstAdd{
 		LLInstructionBase: LLInstructionBase{
 			base: []ir.Instruction{instr},
 		},
-		X: x,
-		Y: y,
-		Dst: dst,
-		newDstFlag: newDstFlag,
+		X:         x,
+		Y:         y,
+		Dst:       dst,
+		memoryOps: ops,
 	}
 }
 
@@ -35,12 +35,6 @@ func (w *WInstAdd) LMCInstructions() []lmc.Instruction {
 	}
 }
 
-func (w *WInstAdd) LMCDefs() []*lmc.DataInstr {
-	if w.newDstFlag {
-		return []*lmc.DataInstr{
-			lmc.NewDataInstr(0, w.Dst),
-		}
-	} else {
-		return nil
-	}
+func (w *WInstAdd) LMCOps() []*lmc.MemoryOp {
+	return w.memoryOps
 }

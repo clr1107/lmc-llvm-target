@@ -8,55 +8,61 @@ import (
 
 func (compiler *Compiler) WrapLLInstAlloca(instr *ir.InstAlloca) (*instructions.WInstAlloca, error) {
 	addr := lmc.Address(instr.ID())
-	box := compiler.Prog.Memory.NewMailbox(addr, "")
+	op := compiler.Prog.Memory.NewMailbox(addr, "")
 
-	if err := compiler.Prog.Memory.AddMailbox(box); err != nil {
-		return nil, err
-	}
-
-	return instructions.NewWInstAlloca(instr, box), nil
+	return instructions.NewWInstAlloca(instr, op.Boxes[0].Box, []*lmc.MemoryOp{op}), nil
 }
 
 func (compiler *Compiler) WrapLLInstLoad(instr *ir.InstLoad) (*instructions.WInstLoad, error) {
-	var newDstFlag bool
 	var srcBox *lmc.Mailbox
 	var dstBox *lmc.Mailbox
+	var ops []*lmc.MemoryOp
+	var op *lmc.MemoryOp
 	var err error
 
-	srcBox, err = compiler.GetMailboxFromLL(instr.Src)
+	op, err = compiler.GetMailboxFromLL(instr.Src)
 	if err != nil {
 		return nil, err
+	} else {
+		srcBox = op.Boxes[0].Box
+		ops = append(ops, op)
 	}
 
 	dstAddr := lmc.Address(instr.ID())
 	dstBox = compiler.Prog.Memory.GetMailboxAddress(dstAddr)
-	if dstBox == nil {
-		dstBox = compiler.Prog.Memory.NewMailbox(dstAddr, "")
-		err = compiler.Prog.Memory.AddMailbox(dstBox)
-		if err != nil {
-			return nil, err
-		}
 
-		newDstFlag = true
+	if dstBox == nil {
+		op := compiler.Prog.Memory.NewMailbox(dstAddr, "")
+		dstBox = op.Boxes[0].Box
+
+		ops = append(ops, op)
 	}
 
-	return instructions.NewWInstLoad(instr, srcBox, dstBox, newDstFlag), nil
+	return instructions.NewWInstLoad(instr, srcBox, dstBox, ops), nil
 }
 
 func (compiler *Compiler) WrapLLInstStore(instr *ir.InstStore) (*instructions.WInstStore, error) {
 	var srcBox *lmc.Mailbox
 	var dstBox *lmc.Mailbox
+	var ops []*lmc.MemoryOp
+	var op *lmc.MemoryOp
 	var err error
 
-	srcBox, err = compiler.GetMailboxFromLL(instr.Src)
+	op, err = compiler.GetMailboxFromLL(instr.Src)
 	if err != nil {
 		return nil, err
+	} else {
+		srcBox = op.Boxes[0].Box
+		ops = append(ops, op)
 	}
 
-	dstBox, err = compiler.GetMailboxFromLL(instr.Dst)
+	op, err = compiler.GetMailboxFromLL(instr.Dst)
 	if err != nil {
 		return nil, err
+	} else {
+		dstBox = op.Boxes[0].Box
+		ops = append(ops, op)
 	}
 
-	return instructions.NewWInstStore(instr, srcBox, dstBox), nil
+	return instructions.NewWInstStore(instr, srcBox, dstBox, ops), nil
 }

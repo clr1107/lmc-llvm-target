@@ -9,7 +9,7 @@ import (
 
 type LLInstructionWrapper interface {
 	LMCInstructions() []lmc.Instruction
-	LMCDefs() []*lmc.DataInstr
+	LMCOps() []*lmc.MemoryOp
 	LLBase() []ir.Instruction
 }
 

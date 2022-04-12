@@ -10,30 +10,34 @@ func (compiler *Compiler) WrapLLInstAdd(instr *ir.InstAdd) (*instructions.WInstA
 	var xBox *lmc.Mailbox
 	var yBox *lmc.Mailbox
 	var dstBox *lmc.Mailbox
-	var newDstFlag bool
+	var ops []*lmc.MemoryOp
+	var op *lmc.MemoryOp
 	var err error
 
-	xBox, err = compiler.GetMailboxFromLL(instr.X)
+	op, err = compiler.GetMailboxFromLL(instr.X)
 	if err != nil {
 		return nil, err
+	} else {
+		xBox = op.Boxes[0].Box
+		ops = append(ops, op)
 	}
 
-	yBox, err = compiler.GetMailboxFromLL(instr.Y)
+	op, err = compiler.GetMailboxFromLL(instr.Y)
 	if err != nil {
 		return nil, err
+	} else {
+		yBox = op.Boxes[0].Box
+		ops = append(ops, op)
 	}
 
 	dstAddr := lmc.Address(instr.ID())
 	dstBox = compiler.Prog.Memory.GetMailboxAddress(dstAddr)
 	if dstBox == nil {
-		dstBox = compiler.Prog.Memory.NewMailbox(dstAddr, "")
-		err = compiler.Prog.Memory.AddMailbox(dstBox)
-		if err != nil {
-			return nil, err
-		}
+		op := compiler.Prog.Memory.NewMailbox(dstAddr, "")
+		dstBox = op.Boxes[0].Box
 
-		newDstFlag = true
+		ops = append(ops, op)
 	}
 
-	return instructions.NewWInstAdd(instr, xBox, yBox, dstBox, newDstFlag), nil
+	return instructions.NewWInstAdd(instr, xBox, yBox, dstBox, ops), nil
 }
