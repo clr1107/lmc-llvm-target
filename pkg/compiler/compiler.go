@@ -59,6 +59,8 @@ func (compiler *Compiler) CompileInst(instr ir.Instruction) (instructions.LLInst
 	// arithmetic
 	case *ir.InstAdd:
 		return compiler.WrapLLInstAdd(instr.(*ir.InstAdd))
+	case *ir.InstSub:
+		return compiler.WrapLLInstSub(instr.(*ir.InstSub))
 	// memory
 	case *ir.InstAlloca:
 		return compiler.WrapLLInstAlloca(instr.(*ir.InstAlloca))
