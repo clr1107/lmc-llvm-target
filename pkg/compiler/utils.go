@@ -59,3 +59,12 @@ func ReflectGetLocalID(x interface{}) (lmc.Address, error) {
 
 	return lmc.Address(id.Int()), nil
 }
+
+func ReflectGetProperty(x interface{}, field string) (interface{}, error) {
+	property := reflect.ValueOf(x).FieldByName(field)
+	if property.IsZero() {
+		return nil, NonexistentPropertyError("#" + field)
+	}
+
+	return property.Interface(), nil
+}

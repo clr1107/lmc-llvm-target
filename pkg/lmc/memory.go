@@ -91,36 +91,42 @@ func makeIdentifierGenerator() func(int) string {
 
 // ---------- MemoryOp ----------
 
-type MemoryOpPair struct {
+type MemoryOpBoxPair struct {
 	Box *Mailbox
 	New bool
 	Value Value
 }
 
-type MemoryOp struct {
-	Boxes []*MemoryOpPair
+type MemoryOpLabelPair struct {
+	Label *Label
+	New bool
 }
 
-func NewMemoryOp1(box *Mailbox, new bool) *MemoryOp {
+type MemoryOp struct {
+	Boxes []*MemoryOpBoxPair
+	Labels []*MemoryOpLabelPair
+}
+
+func NewMemoryOpBox1(box *Mailbox, new bool) *MemoryOp {
 	return &MemoryOp{
-		Boxes: []*MemoryOpPair{
+		Boxes: []*MemoryOpBoxPair{
 			{Box: box, New: new},
 		},
 	}
 }
 
-func NewMemoryOp2(box1 *Mailbox, new1 bool, box2 *Mailbox, new2 bool) *MemoryOp {
+func NewMemoryOpBox2(box1 *Mailbox, new1 bool, box2 *Mailbox, new2 bool) *MemoryOp {
 	return &MemoryOp{
-		Boxes: []*MemoryOpPair{
+		Boxes: []*MemoryOpBoxPair{
 			{Box: box1, New: new1},
 			{Box: box2, New: new2},
 		},
 	}
 }
 
-func NewMemoryOp3(box1 *Mailbox, new1 bool, box2 *Mailbox, new2 bool, box3 *Mailbox, new3 bool) *MemoryOp {
+func NewMemoryOpBox3(box1 *Mailbox, new1 bool, box2 *Mailbox, new2 bool, box3 *Mailbox, new3 bool) *MemoryOp {
 	return &MemoryOp{
-		Boxes: []*MemoryOpPair{
+		Boxes: []*MemoryOpBoxPair{
 			{Box: box1, New: new1},
 			{Box: box2, New: new2},
 			{Box: box3, New: new3},
@@ -128,11 +134,49 @@ func NewMemoryOp3(box1 *Mailbox, new1 bool, box2 *Mailbox, new2 bool, box3 *Mail
 	}
 }
 
-func (m *MemoryOp) GetNew() []*Mailbox {
+func NewMemoryOpLabel1(label *Label, new bool) *MemoryOp {
+	return &MemoryOp{
+		Labels: []*MemoryOpLabelPair{
+			{Label: label, New: new},
+		},
+	}
+}
+
+func NewMemoryOpLabel2(label1 *Label, new1 bool, label2 *Label, new2 bool) *MemoryOp {
+	return &MemoryOp{
+		Labels: []*MemoryOpLabelPair{
+			{Label: label1, New: new1},
+			{Label: label2, New: new2},
+		},
+	}
+}
+
+func NewMemoryOpLabel3(label1 *Label, new1 bool, label2 *Label, new2 bool, label3 *Label, new3 bool) *MemoryOp {
+	return &MemoryOp{
+		Labels: []*MemoryOpLabelPair{
+			{Label: label1, New: new1},
+			{Label: label2, New: new2},
+			{Label: label3, New: new3},
+		},
+	}
+}
+
+func (m *MemoryOp) GetNewBoxes() []*Mailbox {
 	var l []*Mailbox
 	for _, p := range m.Boxes {
 		if p.New {
 			l = append(l, p.Box)
+		}
+	}
+
+	return l
+}
+
+func (m *MemoryOp) GetNewLabels() []*Label {
+	var l []*Label
+	for _, p := range m.Labels {
+		if p.New {
+			l = append(l, p.Label)
 		}
 	}
 
@@ -239,21 +283,21 @@ func (m *Memory) NewMailbox(addr Address, identifier string) *MemoryOp {
 	}
 
 	box := NewMailbox(addr, identifier)
-	return NewMemoryOp1(box, true)
+	return NewMemoryOpBox1(box, true)
 }
 
-func (m *Memory) NewLabel(identifier string) *Label {
+func (m *Memory) NewLabel(identifier string) *MemoryOp {
 	if identifier == "" {
 		identifier = "l_" + m.idGen(len(m.labels))
 	}
 
 	label := NewLabel(identifier)
-	return label
+	return NewMemoryOpLabel1(label, true)
 }
 
 func (m *Memory) Constant(value Value) *MemoryOp {
 	if v, ok := m.constants[value]; ok {
-		return NewMemoryOp1(v, false)
+		return NewMemoryOpBox1(v, false)
 	} else {
 		identifier := "c_" + m.idGen(len(m.constants))
 

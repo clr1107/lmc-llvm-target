@@ -7,7 +7,7 @@ import (
 	"github.com/llir/llvm/ir/value"
 )
 
-func (compiler *Compiler) WrapArithmeticLLInst(instr ir.Instruction, x value.Value, y value.Value, addr lmc.Address) (*instructions.WArithmeticInst, error) {
+func (compiler *Compiler) wrapArithmeticInst(instr ir.Instruction, x value.Value, y value.Value, addr lmc.Address) (*instructions.WArithmeticInst, error) {
 	var xBox *lmc.Mailbox
 	var yBox *lmc.Mailbox
 	var dstBox *lmc.Mailbox
@@ -43,25 +43,35 @@ func (compiler *Compiler) WrapArithmeticLLInst(instr ir.Instruction, x value.Val
 }
 
 func (compiler *Compiler) WrapLLInstAdd(instr *ir.InstAdd) (*instructions.WInstAdd, error) {
-	var arithmetic *instructions.WArithmeticInst
-	var err error
-
-	arithmetic, err = compiler.WrapArithmeticLLInst(instr, instr.X, instr.Y, lmc.Address(instr.ID()))
-	if err != nil {
+	if wrapped, err := compiler.wrapArithmeticInst(instr, instr.X, instr.Y, lmc.Address(instr.ID())); err != nil {
 		return nil, err
+	} else {
+		return instructions.NewWInstAdd(wrapped), nil
 	}
-
-	return instructions.NewWInstAdd(arithmetic), nil
 }
 
 func (compiler *Compiler) WrapLLInstSub(instr *ir.InstSub) (*instructions.WInstSub, error) {
-	var arithmetic *instructions.WArithmeticInst
-	var err error
-
-	arithmetic, err = compiler.WrapArithmeticLLInst(instr, instr.X, instr.Y, lmc.Address(instr.ID()))
-	if err != nil {
+	if wrapped, err := compiler.wrapArithmeticInst(instr, instr.X, instr.Y, lmc.Address(instr.ID())); err != nil {
 		return nil, err
+	} else {
+		return instructions.NewWInstSub(wrapped), nil
 	}
+}
 
-	return instructions.NewWInstSub(arithmetic), nil
+func (compiler *Compiler) WrapLLInstMul(instr *ir.InstMul) (*instructions.WInstMul, error) {
+	if wrapped, err := compiler.wrapArithmeticInst(instr, instr.X, instr.Y, lmc.Address(instr.ID())); err != nil {
+		return nil, err
+	} else {
+		tempOp := compiler.GetTempBox()
+		oneOp := compiler.Prog.Memory.Constant(1)
+		labelOp := compiler.Prog.Memory.NewLabel("")
+
+		return instructions.NewWInstMul(
+			wrapped,
+			tempOp.Boxes[0].Box,
+			oneOp.Boxes[0].Box,
+			labelOp.Labels[0].Label,
+			[]*lmc.MemoryOp{tempOp, oneOp, labelOp},
+		), nil
+	}
 }

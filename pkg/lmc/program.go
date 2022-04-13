@@ -21,7 +21,7 @@ func (p *Program) AddInstructions(instrs []Instruction, defs []*DataInstr) {
 
 func (p *Program) NewMailbox(addr Address, identifier string) (*Mailbox, error) {
 	op := p.Memory.NewMailbox(addr, identifier)
-	if err := p.Memory.AddMailbox(op.GetNew()[0]); err != nil {
+	if err := p.Memory.AddMailbox(op.Boxes[0].Box); err != nil {
 		return nil, err
 	}
 
@@ -30,14 +30,18 @@ func (p *Program) NewMailbox(addr Address, identifier string) (*Mailbox, error) 
 }
 
 func (p *Program) NewLabel(identifier string) (*Label, error) {
-	label := p.Memory.NewLabel(identifier)
-	return label, p.Memory.AddLabel(label)
+	op := p.Memory.NewLabel(identifier)
+	if err := p.Memory.AddLabel(op.Labels[0].Label); err != nil {
+		return nil, err
+	}
+
+	return op.Labels[0].Label, nil
 }
 
 func (p *Program) Constant(value Value) (*Mailbox, error) {
 	op := p.Memory.Constant(value)
 
-	n := op.GetNew()
+	n := op.GetNewBoxes()
 	if len(n) > 0 {
 		if err := p.Memory.AddMailbox(n[0]); err != nil {
 			return nil, err
