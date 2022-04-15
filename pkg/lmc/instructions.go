@@ -22,6 +22,8 @@ func formatInstrStr(name string, params []string) string {
 
 // ---------- InstructionSet ----------
 
+// InstructionSet holds all instructions along with, separately defined, data
+// instructions for defining new mailboxes.
 type InstructionSet struct {
 	instructions    []Instruction
 	defInstructions []*DataInstr
@@ -42,6 +44,8 @@ func (s *InstructionSet) AddDef(def *DataInstr) {
 	s.defInstructions = append(s.defInstructions, def)
 }
 
+// Implements LMCString by returning, as a string, the LMC instructions as a
+// program.
 func (s *InstructionSet) LMCString() string {
 	var buf strings.Builder
 
@@ -96,6 +100,7 @@ func (s *InstructionSet) String() string {
 
 // ---------- Instructions base ----------
 
+// Self-explanatory, eh?
 type Instruction interface {
 	LMCType
 	Name() string
@@ -110,162 +115,9 @@ func (i *InstructionBase) Name() string {
 	return i.name
 }
 
-// ---------- Unary instruction ----------
-
-type UnaryInstr struct {
-	InstructionBase
-	mnemonic string
-}
-
-func (i *UnaryInstr) String() string {
-	return formatInstrStr(i.Name(), nil)
-}
-
-func (i *UnaryInstr) LMCString() string {
-	return i.mnemonic
-}
-
-// ---------- Input instruction ----------
-
-type InputInstr struct {
-	UnaryInstr
-}
-
-func NewInputInstr() *InputInstr {
-	return &InputInstr{
-		UnaryInstr: UnaryInstr{
-			InstructionBase: InstructionBase{
-				name: "Input",
-			},
-			mnemonic: "INP",
-		},
-	}
-}
-
-// ---------- Output instruction ----------
-
-type OutputInstr struct {
-	UnaryInstr
-}
-
-func NewOutputInstr() *OutputInstr {
-	return &OutputInstr{
-		UnaryInstr: UnaryInstr{
-			InstructionBase: InstructionBase{
-				name: "Output",
-			},
-			mnemonic: "OUT",
-		},
-	}
-}
-
-// ---------- Halt instruction ----------
-
-type HaltInstr struct {
-	UnaryInstr
-}
-
-func NewHaltInstr() *HaltInstr {
-	return &HaltInstr{
-		UnaryInstr: UnaryInstr{
-			InstructionBase: InstructionBase{
-				name: "Halt",
-			},
-			mnemonic: "HLT",
-		},
-	}
-}
-
-// ---------- Binary instruction ----------
-
-type BinaryInstr struct {
-	InstructionBase
-	Param    *Mailbox
-	mnemonic string
-}
-
-func (i *BinaryInstr) String() string {
-	return formatInstrStr(i.Name(), []string{i.Param.Identifier()})
-}
-
-func (i *BinaryInstr) LMCString() string {
-	return fmt.Sprintf("%s %s", i.mnemonic, i.Param.Identifier())
-}
-
-// ---------- Add instruction ----------
-
-type AddInstr struct {
-	BinaryInstr
-}
-
-func NewAddInstr(param *Mailbox) *AddInstr {
-	return &AddInstr{
-		BinaryInstr: BinaryInstr{
-			InstructionBase: InstructionBase{
-				name: "Add",
-			},
-			Param:    param,
-			mnemonic: "ADD",
-		},
-	}
-}
-
-// ---------- Subtract instruction ----------
-
-type SubInstr struct {
-	BinaryInstr
-}
-
-func NewSubInstr(param *Mailbox) *SubInstr {
-	return &SubInstr{
-		BinaryInstr: BinaryInstr{
-			InstructionBase: InstructionBase{
-				name: "Sub",
-			},
-			Param:    param,
-			mnemonic: "SUB",
-		},
-	}
-}
-
-// ---------- Store instruction ----------
-
-type StoreInstr struct {
-	BinaryInstr
-}
-
-func NewStoreInstr(param *Mailbox) *StoreInstr {
-	return &StoreInstr{
-		BinaryInstr: BinaryInstr{
-			InstructionBase: InstructionBase{
-				name: "Store",
-			},
-			Param:    param,
-			mnemonic: "STA",
-		},
-	}
-}
-
-// ---------- Load instruction ----------
-
-type LoadInstr struct {
-	BinaryInstr
-}
-
-func NewLoadInstr(param *Mailbox) *LoadInstr {
-	return &LoadInstr{
-		BinaryInstr: BinaryInstr{
-			InstructionBase: InstructionBase{
-				name: "Load",
-			},
-			Param:    param,
-			mnemonic: "LDA",
-		},
-	}
-}
-
 // ---------- Data instruction ----------
 
+// DataInstr handles the LMC data defining instruction `DAT`.
 type DataInstr struct {
 	InstructionBase
 	Data Value
@@ -286,12 +138,18 @@ func (i *DataInstr) String() string {
 	return formatInstrStr(i.Name(), []string{strconv.Itoa(int(i.Data)), i.Box.Identifier()})
 }
 
+// Output form: `X DAT Y` where `X` is the box to be defined, and `Y` is the
+// initial value, usually 0.
+//
+// E.g., `A DAT 0`.
 func (i *DataInstr) LMCString() string {
 	return fmt.Sprintf("%s DAT %d", i.Box.Identifier(), i.Data)
 }
 
 // ---------- Labelled instruction ----------
 
+// Labelled merely holds an instruction and a label to tag to it. LMC is simple
+// like that :)
 type Labelled struct {
 	label *Label
 	Instruction
@@ -308,6 +166,10 @@ func (m *Labelled) Identifier() string {
 	return m.label.Identifier()
 }
 
+// Output form: `X Y` where `X` is the identifier and `Y` is the lmc string form
+// of the underlying instruction being labelled.
+//
+// E.g., `l_E ADD D`.
 func (m *Labelled) LMCString() string {
 	return fmt.Sprintf("%s %s", m.Identifier(), m.Instruction.LMCString())
 }
@@ -316,12 +178,18 @@ func (m *Labelled) LMCString() string {
 
 type BranchType uint
 
+// Branching types as an enumeration.
 const (
 	BRAlways   BranchType = iota // Branch Always
-	BRPositive                   // Branch if acc positive
+	BRPositive                   // Branch if acc +ve
 	BRZero                       // Branch if acc zero
 )
 
+var (
+	bMnemonics = [...]string{"BRA", "BRP", "BRZ"}
+)
+
+// BranchInstr handles the LMC concept of branching to labels.
 type BranchInstr struct {
 	InstructionBase
 	BranchType BranchType
@@ -339,20 +207,180 @@ func (b *BranchInstr) Identifier() string {
 	return b.label.Identifier()
 }
 
+// Output form: `BR[A|P|Z] X` where `X` is the label to branch to.
+//
+// E.g., `BRZ l_A`.
 func (b *BranchInstr) LMCString() string {
-	var t string
+	return fmt.Sprintf("%s %s", bMnemonics[b.BranchType], b.label.Identifier())
+}
 
-	switch b.BranchType {
-	case BRAlways:
-		t = "BRA"
-		break
-	case BRPositive:
-		t = "BRP"
-		break
-	case BRZero:
-		t = "BRZ"
-		break
+// ---------- Nullary instruction ----------
+
+// NullaryInstr is a base struct for all instructions that have no parameters.
+type NullaryInstr struct {
+	InstructionBase
+	mnemonic string
+}
+
+func (i *NullaryInstr) String() string {
+	return formatInstrStr(i.Name(), nil)
+}
+
+// All nullary instructions have the output form: `X` where `X` is the mnemonic
+// of the instruction.
+//
+// E.g., `INP`.
+func (i *NullaryInstr) LMCString() string {
+	return i.mnemonic
+}
+
+// ---------- Input instruction ----------
+
+// InputInstr handles the LMC nullary instruction `INP`.
+type InputInstr struct {
+	NullaryInstr
+}
+
+func NewInputInstr() *InputInstr {
+	return &InputInstr{
+		NullaryInstr: NullaryInstr{
+			InstructionBase: InstructionBase{
+				name: "Input",
+			},
+			mnemonic: "INP",
+		},
 	}
+}
 
-	return fmt.Sprintf("%s %s", t, b.label.Identifier())
+// ---------- Output instruction ----------
+
+// OutputInstr handles the nullary LMC instruction `OUT`.
+type OutputInstr struct {
+	NullaryInstr
+}
+
+func NewOutputInstr() *OutputInstr {
+	return &OutputInstr{
+		NullaryInstr: NullaryInstr{
+			InstructionBase: InstructionBase{
+				name: "Output",
+			},
+			mnemonic: "OUT",
+		},
+	}
+}
+
+// ---------- Halt instruction ----------
+
+// HaltInstr handles the nullary LMC instruction `HLT`.
+type HaltInstr struct {
+	NullaryInstr
+}
+
+func NewHaltInstr() *HaltInstr {
+	return &HaltInstr{
+		NullaryInstr: NullaryInstr{
+			InstructionBase: InstructionBase{
+				name: "Halt",
+			},
+			mnemonic: "HLT",
+		},
+	}
+}
+
+// ---------- Unary instruction ----------
+
+// UnaryInstr is a base struct for all instructions that have one parameter.
+type UnaryInstr struct {
+	InstructionBase
+	Param    *Mailbox
+	mnemonic string
+}
+
+func (i *UnaryInstr) String() string {
+	return formatInstrStr(i.Name(), []string{i.Param.Identifier()})
+}
+
+// All unary instructions have the output form: `X Y` where `X` is the mnemonic
+// of the instruction and `Y` is the parameter.
+//
+// E.g., `LDA A`.
+func (i *UnaryInstr) LMCString() string {
+	return fmt.Sprintf("%s %s", i.mnemonic, i.Param.Identifier())
+}
+
+// ---------- Add instruction ----------
+
+// AddInstr handles the unary LMC instruction `ADD`.
+type AddInstr struct {
+	UnaryInstr
+}
+
+func NewAddInstr(param *Mailbox) *AddInstr {
+	return &AddInstr{
+		UnaryInstr: UnaryInstr{
+			InstructionBase: InstructionBase{
+				name: "Add",
+			},
+			Param:    param,
+			mnemonic: "ADD",
+		},
+	}
+}
+
+// ---------- Subtract instruction ----------
+
+// SubInstr handles the unary LMC instruction `SUB`.
+type SubInstr struct {
+	UnaryInstr
+}
+
+func NewSubInstr(param *Mailbox) *SubInstr {
+	return &SubInstr{
+		UnaryInstr: UnaryInstr{
+			InstructionBase: InstructionBase{
+				name: "Sub",
+			},
+			Param:    param,
+			mnemonic: "SUB",
+		},
+	}
+}
+
+// ---------- Store instruction ----------
+
+// StoreInstr handles the unary LMC instruction `STA`.
+type StoreInstr struct {
+	UnaryInstr
+}
+
+func NewStoreInstr(param *Mailbox) *StoreInstr {
+	return &StoreInstr{
+		UnaryInstr: UnaryInstr{
+			InstructionBase: InstructionBase{
+				name: "Store",
+			},
+			Param:    param,
+			mnemonic: "STA",
+		},
+	}
+}
+
+// ---------- Load instruction ----------
+
+// LoadInstr handles the unary LMC instruction `LDA`.
+type LoadInstr struct {
+	UnaryInstr
+}
+
+func NewLoadInstr(param *Mailbox) *LoadInstr {
+	return &LoadInstr{
+		UnaryInstr: UnaryInstr{
+			InstructionBase: InstructionBase{
+				name: "Load",
+			},
+			Param:    param,
+			mnemonic: "LDA",
+		},
+	}
 }

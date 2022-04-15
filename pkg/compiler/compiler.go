@@ -79,6 +79,7 @@ func (compiler *Compiler) CompileInst(instr ir.Instruction) (instructions.LLInst
 func (compiler *Compiler) AddCompiledInstruction(instr instructions.LLInstructionWrapper) error {
 	var defs []*lmc.DataInstr
 
+	// Consider in the future using *Program#AddMemoryOp
 	for _, op := range instr.LMCOps() {
 		for _, box := range op.GetNewBoxes() {
 			if err := compiler.Prog.Memory.AddMailbox(box); err != nil {
