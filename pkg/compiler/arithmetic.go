@@ -75,3 +75,21 @@ func (compiler *Compiler) WrapLLInstMul(instr *ir.InstMul) (*instructions.WInstM
 		), nil
 	}
 }
+
+func (compiler *Compiler) WrapLLInstDiv(instr ir.Instruction, X value.Value, Y value.Value, id int64) (*instructions.WInstDiv, error) {
+	if wrapped, err := compiler.wrapArithmeticInst(instr, X, Y, lmc.Address(id)); err != nil {
+		return nil, err
+	} else {
+		tempOp := compiler.GetTempBox()
+		oneOp := compiler.Prog.Memory.Constant(1)
+		labelOp := compiler.Prog.Memory.NewLabel("")
+
+		return instructions.NewWInstDiv(
+			wrapped,
+			tempOp.Boxes[0].Box,
+			oneOp.Boxes[0].Box,
+			labelOp.Labels[0].Label,
+			[]*lmc.MemoryOp{tempOp, oneOp, labelOp},
+		), nil
+	}
+}

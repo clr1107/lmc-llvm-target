@@ -16,11 +16,11 @@ void _lmc(void);
 /**
  * Output a number at a mailbox.
  */
-extern void output(number_t);
+extern void output(number_t *);
 
 /**
  * Take an input, to be stored in a mailbox.
  */
-extern void input(number_t);
+extern void input(number_t *);
 
 #endif

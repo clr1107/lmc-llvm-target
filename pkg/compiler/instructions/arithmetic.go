@@ -114,3 +114,43 @@ func (w *WInstMul) LMCInstructions() []lmc.Instruction {
 func (w *WInstMul) LMCOps() []*lmc.MemoryOp {
 	return w.memoryOps
 }
+
+// ---------- WInstDiv ----------
+
+type WInstDiv struct {
+	WArithmeticInst
+	Temp *lmc.Mailbox
+	OneConst *lmc.Mailbox
+	LoopLabel *lmc.Label
+}
+
+func NewWInstDiv(inst *WArithmeticInst, temp *lmc.Mailbox, oneConst *lmc.Mailbox, loopLabel *lmc.Label, ops []*lmc.MemoryOp) *WInstDiv {
+	inst.memoryOps = append(inst.memoryOps, ops...)
+	return &WInstDiv{
+		WArithmeticInst: *inst,
+		Temp: temp,
+		OneConst: oneConst,
+		LoopLabel: loopLabel,
+	}
+}
+
+func (w *WInstDiv) LMCInstructions() []lmc.Instruction {
+	return []lmc.Instruction{
+		lmc.NewLoadInstr(w.X),
+		lmc.NewStoreInstr(w.Temp),
+		lmc.NewLabelled(w.LoopLabel, lmc.NewLoadInstr(w.Dst)),
+		lmc.NewAddInstr(w.OneConst),
+		lmc.NewStoreInstr(w.Dst),
+		lmc.NewLoadInstr(w.Temp),
+		lmc.NewSubInstr(w.Y),
+		lmc.NewStoreInstr(w.Temp),
+		lmc.NewBranchInstr(lmc.BRPositive, w.LoopLabel),
+		lmc.NewLoadInstr(w.Dst),
+		lmc.NewSubInstr(w.OneConst),
+		lmc.NewStoreInstr(w.Dst),
+	}
+}
+
+func (w *WInstDiv) LMCOps() []*lmc.MemoryOp {
+	return w.memoryOps
+}
