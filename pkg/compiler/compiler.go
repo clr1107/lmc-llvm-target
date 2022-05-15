@@ -67,6 +67,10 @@ func (compiler *Compiler) CompileInst(instr ir.Instruction) (instructions.LLInst
 		return compiler.WrapLLInstDiv(cast, cast.X, cast.Y, cast.ID())
 	case *ir.InstUDiv:
 		return compiler.WrapLLInstDiv(cast, cast.X, cast.Y, cast.ID())
+	case *ir.InstSRem:
+		return compiler.WrapLLInstRem(cast, cast.X, cast.Y, cast.ID())
+	case *ir.InstURem:
+		return compiler.WrapLLInstRem(cast, cast.X, cast.Y, cast.ID())
 	// memory
 	case *ir.InstAlloca:
 		return compiler.WrapLLInstAlloca(cast)

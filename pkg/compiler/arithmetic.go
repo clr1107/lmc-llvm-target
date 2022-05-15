@@ -93,3 +93,17 @@ func (compiler *Compiler) WrapLLInstDiv(instr ir.Instruction, X value.Value, Y v
 		), nil
 	}
 }
+
+func (compiler *Compiler) WrapLLInstRem(instr ir.Instruction, X value.Value, Y value.Value, id int64) (*instructions.WInstRem, error) {
+	if wrapped, err := compiler.wrapArithmeticInst(instr, X, Y, lmc.Address(id)); err != nil {
+		return nil, err
+	} else {
+		labelOp := compiler.Prog.Memory.NewLabel("")
+
+		return instructions.NewWInstRem(
+			wrapped,
+			labelOp.Labels[0].Label,
+			[]*lmc.MemoryOp{labelOp},
+		), nil
+	}
+}

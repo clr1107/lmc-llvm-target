@@ -154,3 +154,31 @@ func (w *WInstDiv) LMCInstructions() []lmc.Instruction {
 func (w *WInstDiv) LMCOps() []*lmc.MemoryOp {
 	return w.memoryOps
 }
+
+// ---------- WInstRem ----------
+
+type WInstRem struct {
+	WArithmeticInst
+	LoopLabel *lmc.Label
+}
+
+func NewWInstRem(inst *WArithmeticInst, loopLabel *lmc.Label, ops []*lmc.MemoryOp) *WInstRem {
+	inst.memoryOps = append(inst.memoryOps, ops...)
+	return &WInstRem{
+		WArithmeticInst: *inst,
+		LoopLabel: loopLabel,
+	}
+}
+
+func (w *WInstRem) LMCInstructions() []lmc.Instruction {
+	return []lmc.Instruction{
+		lmc.NewLoadInstr(w.X),
+		lmc.NewLabelled(w.LoopLabel, lmc.NewStoreInstr(w.Dst)),
+		lmc.NewSubInstr(w.Y),
+		lmc.NewBranchInstr(lmc.BRPositive, w.LoopLabel),
+	}
+}
+
+func (w *WInstRem) LMCOps() []*lmc.MemoryOp {
+	return w.memoryOps
+}
