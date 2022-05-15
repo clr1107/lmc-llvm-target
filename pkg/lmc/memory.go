@@ -248,7 +248,7 @@ func NewBasicMemory() *Memory {
 	return NewMemory(makeIdentifierGenerator())
 }
 
-func (m *Memory) GetInstructions() *InstructionSet {
+func (m *Memory) GetInstructionSet() *InstructionSet {
 	return m.instructions
 }
 

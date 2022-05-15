@@ -36,12 +36,52 @@ func NewInstructionSet() *InstructionSet {
 	}
 }
 
+func (s *InstructionSet) GetInstructions() []Instruction {
+	return s.instructions
+}
+
+func (s *InstructionSet) GetDefs() []*DataInstr {
+	return s.defInstructions
+}
+
 func (s *InstructionSet) AddInstruction(instr Instruction) {
 	s.instructions = append(s.instructions, instr)
 }
 
+func (s *InstructionSet) RemoveInstruction(i int) error {
+	if i >= len(s.instructions) {
+		return fmt.Errorf(
+			"attempted to remove instruction with index %d out of %d instructions",
+			i, len(s.instructions),
+		)
+	}
+
+	s.instructions = append(s.instructions[:i], s.instructions[i+1:]...)
+	return nil
+}
+
 func (s *InstructionSet) AddDef(def *DataInstr) {
 	s.defInstructions = append(s.defInstructions, def)
+}
+
+func (s *InstructionSet) RemoveDef(name string) error {
+	var i []int
+	for k, v := range s.defInstructions {
+		if v.name == name {
+			i = append(i, k)
+			break
+		}
+	}
+
+	if len(i) == 0 {
+		for _, ii := range i {
+			s.defInstructions = append(s.defInstructions[:ii], s.defInstructions[ii+1:]...)
+		}
+	} else {
+		return fmt.Errorf("attempted to remove all def of variable `%s` when it does not exist", name)
+	}
+
+	return nil
 }
 
 // Implements LMCString by returning, as a string, the LMC instructions as a
