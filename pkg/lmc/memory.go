@@ -252,6 +252,10 @@ func (m *Memory) GetInstructionSet() *InstructionSet {
 	return m.instructions
 }
 
+func (m *Memory) GetMailboxes() []*Mailbox {
+	return m.mailboxes
+}
+
 // GetMailboxAddress returns the first mailbox to match the given address. Nil otherwise.
 // Only handles addresses >= 0 as -ve addresses are non-user created boxes.
 func (m *Memory) GetMailboxAddress(addr Address) *Mailbox {
@@ -303,6 +307,28 @@ func (m *Memory) AddMailbox(mailbox *Mailbox) error {
 
 	m.mailboxes = append(m.mailboxes, mailbox)
 	return nil
+}
+
+func (m *Memory) RemoveMailboxIdentifier(identifier string) bool {
+	for k, b := range m.mailboxes {
+		if b.Identifier() == identifier {
+			m.mailboxes = append(m.mailboxes[:k], m.mailboxes[k+1:]...)
+			return true
+		}
+	}
+
+	return false
+}
+
+func (m *Memory) RemoveMailboxAddress(address Address) bool {
+	for k, b := range m.mailboxes {
+		if b.Address() == address {
+			m.mailboxes = append(m.mailboxes[:k], m.mailboxes[k+1:]...)
+			return true
+		}
+	}
+
+	return false
 }
 
 // AddLabel will try to add a given label to the memory; returning an error if

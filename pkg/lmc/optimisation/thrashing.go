@@ -1,4 +1,4 @@
-package optimiser
+package optimisation
 
 import (
 	"github.com/clr1107/lmc-llvm-target/lmc"
@@ -23,9 +23,10 @@ func (O *OThrashing) Optimise() error {
 	instrs := O.program.Memory.GetInstructionSet().GetInstructions()
 
 	for ii := 1; ii < len(instrs); ii++ {
-		_, ok2 := instrs[ii].(*lmc.LoadInstr)
+		v2, ok2 := instrs[ii].(*lmc.LoadInstr)
 		if ok2 {
-			if _, ok1 := instrs[ii-1].(*lmc.StoreInstr); ok1 {
+			v1, ok1 := instrs[ii-1].(*lmc.StoreInstr)
+			if ok1 && v2.Param.Identifier() == v1.Param.Identifier() {
 				i = append(i, ii)
 			}
 		}

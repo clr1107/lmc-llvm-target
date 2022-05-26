@@ -73,7 +73,7 @@ func (s *InstructionSet) RemoveDef(name string) error {
 		}
 	}
 
-	if len(i) == 0 {
+	if len(i) > 0 {
 		for _, ii := range i {
 			s.defInstructions = append(s.defInstructions[:ii], s.defInstructions[ii+1:]...)
 		}
@@ -144,6 +144,7 @@ func (s *InstructionSet) String() string {
 type Instruction interface {
 	LMCType
 	Name() string
+	Boxes() []*Mailbox
 }
 
 type InstructionBase struct {
@@ -153,6 +154,10 @@ type InstructionBase struct {
 
 func (i *InstructionBase) Name() string {
 	return i.name
+}
+
+func (i *InstructionBase) Boxes() []*Mailbox {
+	return make([]*Mailbox, 0)
 }
 
 // ---------- Data instruction ----------
@@ -335,6 +340,10 @@ type UnaryInstr struct {
 	InstructionBase
 	Param    *Mailbox
 	mnemonic string
+}
+
+func (i *UnaryInstr) Boxes() []*Mailbox {
+	return []*Mailbox{i.Param}
 }
 
 func (i *UnaryInstr) String() string {
