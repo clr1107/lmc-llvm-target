@@ -145,6 +145,7 @@ type Instruction interface {
 	LMCType
 	Name() string
 	Boxes() []*Mailbox
+	ACC() bool
 }
 
 type InstructionBase struct {
@@ -183,6 +184,10 @@ func (i *DataInstr) String() string {
 	return formatInstrStr(i.Name(), []string{strconv.Itoa(int(i.Data)), i.Box.Identifier()})
 }
 
+func (i *DataInstr) ACC() bool {
+	return false
+}
+
 // Output form: `X DAT Y` where `X` is the box to be defined, and `Y` is the
 // initial value, usually 0.
 //
@@ -217,6 +222,11 @@ func (m *Labelled) Identifier() string {
 // E.g., `l_E ADD D`.
 func (m *Labelled) LMCString() string {
 	return fmt.Sprintf("%s %s", m.Identifier(), m.Instruction.LMCString())
+}
+
+// Depends on what it's wrapping.
+func (m *Labelled) ACC() bool {
+	return m.Instruction.ACC()
 }
 
 // ---------- Branch instruction ----------
@@ -259,6 +269,10 @@ func (b *BranchInstr) LMCString() string {
 	return fmt.Sprintf("%s %s", bMnemonics[b.BranchType], b.label.Identifier())
 }
 
+func (b *BranchInstr) ACC() bool {
+	return false
+}
+
 // ---------- Nullary instruction ----------
 
 // NullaryInstr is a base struct for all instructions that have no parameters.
@@ -297,6 +311,10 @@ func NewInputInstr() *InputInstr {
 	}
 }
 
+func (i *InputInstr) ACC() bool {
+	return true
+}
+
 // ---------- Output instruction ----------
 
 // OutputInstr handles the nullary LMC instruction `OUT`.
@@ -315,6 +333,10 @@ func NewOutputInstr() *OutputInstr {
 	}
 }
 
+func (o *OutputInstr) ACC() bool {
+	return false
+}
+
 // ---------- Halt instruction ----------
 
 // HaltInstr handles the nullary LMC instruction `HLT`.
@@ -331,6 +353,10 @@ func NewHaltInstr() *HaltInstr {
 			mnemonic: "HLT",
 		},
 	}
+}
+
+func (h *HaltInstr) ACC() bool {
+	return false
 }
 
 // ---------- Unary instruction ----------
@@ -377,6 +403,10 @@ func NewAddInstr(param *Mailbox) *AddInstr {
 	}
 }
 
+func (a *AddInstr) ACC() bool {
+	return true
+}
+
 // ---------- Subtract instruction ----------
 
 // SubInstr handles the unary LMC instruction `SUB`.
@@ -394,6 +424,10 @@ func NewSubInstr(param *Mailbox) *SubInstr {
 			mnemonic: "SUB",
 		},
 	}
+}
+
+func (s *SubInstr) ACC() bool {
+	return true
 }
 
 // ---------- Store instruction ----------
@@ -415,6 +449,10 @@ func NewStoreInstr(param *Mailbox) *StoreInstr {
 	}
 }
 
+func (s *StoreInstr) ACC() bool {
+	return false
+}
+
 // ---------- Load instruction ----------
 
 // LoadInstr handles the unary LMC instruction `LDA`.
@@ -432,4 +470,8 @@ func NewLoadInstr(param *Mailbox) *LoadInstr {
 			mnemonic: "LDA",
 		},
 	}
+}
+
+func (l *LoadInstr) ACC() bool {
+	return true
 }
