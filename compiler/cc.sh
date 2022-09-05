@@ -1,10 +1,13 @@
 #!/bin/bash
+#
+# Compiles a C source to an LLVM output.
+#
 
 OUTPUT="out.ll"
 FLAGS="-O3"
 
 if [ "$#" -lt 1 ]; then
-  echo "Usage: \`c.sh <C source> [output] [clang flags ...]\`"
+  echo "Usage: \`cc.sh <C source> [output] [clang flags ...]\`"
   exit 1
 fi
 

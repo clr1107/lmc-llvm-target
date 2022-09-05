@@ -45,12 +45,12 @@ func (compiler *Compiler) GetMailboxFromLL(ll interface{}) (*lmc.MemoryOp, error
 
 		mbox := compiler.Prog.Memory.GetMailboxAddress(id)
 		if mbox == nil {
-			return nil, UnknownMailboxError(id)
+			return nil, E_UnknownMailbox(id, nil)
 		}
 
 		return lmc.NewMemoryOpBox1(mbox, false), nil
 	default:
-		return nil, InvalidLLTypeError(reflect.TypeOf(ll).String())
+		return nil, E_InvalidLLTypes(nil, reflect.TypeOf(ll).String())
 	}
 }
 
@@ -80,7 +80,7 @@ func (compiler *Compiler) CompileInst(instr ir.Instruction) (instructions.LLInst
 		return compiler.WrapLLInstStore(cast)
 	// unknown
 	default:
-		return nil, UnknownLLInstructionError(instr)
+		return nil, E_UnknownLLInstruction(instr, nil)
 	}
 }
 
@@ -91,13 +91,13 @@ func (compiler *Compiler) AddCompiledInstruction(instr instructions.LLInstructio
 	for _, op := range instr.LMCOps() {
 		for _, box := range op.GetNewBoxes() {
 			if err := compiler.Prog.Memory.AddMailbox(box); err != nil {
-				return err
+				return E_LMC("adding compiled instruction -- CONSIDER *Program#AddMemoryOp", err)
 			}
 		}
 
 		for _, label := range op.GetNewLabels() {
 			if err := compiler.Prog.Memory.AddLabel(label); err != nil {
-				return err
+				return E_LMC("adding compiled instr label -- CONSIDER *Program#AddMemoryOp", err)
 			}
 		}
 
