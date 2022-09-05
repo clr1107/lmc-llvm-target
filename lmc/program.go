@@ -1,5 +1,7 @@
 package lmc
 
+import "fmt"
+
 // Program represents an LMC program. It holds the mailboxes and provides
 // utility functions to operate on the memory.
 type Program struct {
@@ -28,13 +30,13 @@ func (p *Program) AddInstructions(instrs []Instruction, defs []*DataInstr) {
 func (p *Program) AddMemoryOp(op *MemoryOp) error {
 	for _, box := range op.GetNewBoxes() {
 		if err := p.Memory.AddMailbox(box); err != nil {
-			return err
+			return fmt.Errorf("could not add memory op: %s", err)
 		}
 	}
 
 	for _, label := range op.GetNewLabels() {
 		if err := p.Memory.AddLabel(label); err != nil {
-			return err
+			return fmt.Errorf("could not add label: %s", err)
 		}
 	}
 
@@ -51,7 +53,7 @@ func (p *Program) AddMemoryOp(op *MemoryOp) error {
 func (p *Program) NewMailbox(addr Address, identifier string) (*Mailbox, error) {
 	op := p.Memory.NewMailbox(addr, identifier)
 	if err := p.Memory.AddMailbox(op.Boxes[0].Box); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not create a new mailbox: %s", err)
 	}
 
 	p.AddInstructions(nil, op.Defs())
@@ -66,7 +68,7 @@ func (p *Program) NewMailbox(addr Address, identifier string) (*Mailbox, error) 
 func (p *Program) NewLabel(identifier string) (*Label, error) {
 	op := p.Memory.NewLabel(identifier)
 	if err := p.Memory.AddLabel(op.Labels[0].Label); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not create a new label: %s", err)
 	}
 
 	return op.Labels[0].Label, nil
@@ -84,7 +86,7 @@ func (p *Program) Constant(value Value) (*Mailbox, error) {
 	defs := op.Defs()
 	if len(defs) > 0 {
 		if err := p.Memory.AddMailbox(box.Box); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not get a constant: %s", err)
 		}
 
 		p.AddInstructions(nil, defs)

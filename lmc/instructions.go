@@ -50,10 +50,7 @@ func (s *InstructionSet) AddInstruction(instr Instruction) {
 
 func (s *InstructionSet) RemoveInstruction(i int) error {
 	if i >= len(s.instructions) {
-		return fmt.Errorf(
-			"attempted to remove instruction with index %d out of %d instructions",
-			i, len(s.instructions),
-		)
+		return CannotRemoveInstructionIndexError(i, len(s.instructions))
 	}
 
 	s.instructions = append(s.instructions[:i], s.instructions[i+1:]...)
@@ -69,7 +66,7 @@ func (s *InstructionSet) RemoveDef(name string) error {
 	for k, v := range s.defInstructions {
 		if v.name == name {
 			i = append(i, k)
-			break
+			//break
 		}
 	}
 
@@ -78,7 +75,7 @@ func (s *InstructionSet) RemoveDef(name string) error {
 			s.defInstructions = append(s.defInstructions[:ii], s.defInstructions[ii+1:]...)
 		}
 	} else {
-		return fmt.Errorf("attempted to remove all def of variable `%s` when it does not exist", name)
+		return VariableDoesNotExistError(name)
 	}
 
 	return nil

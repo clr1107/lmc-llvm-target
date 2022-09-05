@@ -5,18 +5,6 @@ import (
 	"strings"
 )
 
-var (
-	MailboxAlreadyExistsAddressError = func(addr Address) error {
-		return fmt.Errorf("a mailbox with address %d already exists", addr)
-	}
-	MailboxAlreadyExistsIdentifierError = func(identifier string) error {
-		return fmt.Errorf("a mailbox with identifier `%s' already exists", identifier)
-	}
-	LabelAlreadyExistsError = func(identifier string) error {
-		return fmt.Errorf("a label with identifier `%s' already exists", identifier)
-	}
-)
-
 // ---------- Mailbox ----------
 
 // Mailbox represents one memory location in LMC. It has an address, used only

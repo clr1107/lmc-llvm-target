@@ -19,6 +19,24 @@ import (
 type Address int64
 type Value int
 
+var (
+	MailboxAlreadyExistsAddressError = func(addr Address) error {
+		return fmt.Errorf("a mailbox with address %d already exists", addr)
+	}
+	MailboxAlreadyExistsIdentifierError = func(identifier string) error {
+		return fmt.Errorf("a mailbox with identifier `%s' already exists", identifier)
+	}
+	LabelAlreadyExistsError = func(identifier string) error {
+		return fmt.Errorf("a label with identifier `%s' already exists", identifier)
+	}
+	CannotRemoveInstructionIndexError = func(a int, b int) error {
+		return fmt.Errorf("cannot remove instruction index %d out of %d", a, b)
+	}
+	VariableDoesNotExistError = func(name string) error {
+		return fmt.Errorf("variable `%s` does not exist", name)
+	}
+)
+
 type LMCType interface {
 	fmt.Stringer
 	LMCString() string
@@ -30,29 +48,4 @@ type Addressable interface {
 
 type Identifiable interface {
 	Identifier() string
-}
-
-// ---------- Error ----------
-
-type Error struct {
-	error
-	E      error
-	Header string
-	Child  error
-}
-
-func (e *Error) Error() string {
-	var s string
-
-	if e.Header != "" {
-		s = e.Header + " "
-	}
-
-	s += e.E.Error()
-
-	if e.Child != nil {
-		s += ": " + e.Child.Error()
-	}
-
-	return s
 }

@@ -1,6 +1,9 @@
 package optimisation
 
-import "github.com/clr1107/lmc-llvm-target/lmc"
+import (
+	"fmt"
+	"github.com/clr1107/lmc-llvm-target/lmc"
+)
 
 type OStrategy uint
 
@@ -13,6 +16,15 @@ const (
 	Stacking
 )
 
+var OStrategyNames = map[OStrategy]string{
+	Thrashing: "thrashing",
+	Waste:     "waste",
+	BProp:     "b propogation",
+	Chaining:  "addition chaining",
+	Unroll:    "loop unrolling",
+	Stacking:  "OSTACK",
+}
+
 type Optimiser interface {
 	Optimise() error
 	Program() *lmc.Program
@@ -20,13 +32,13 @@ type Optimiser interface {
 }
 
 type StackingOptimiser struct {
-	program *lmc.Program
+	program    *lmc.Program
 	strategies []OStrategy
 }
 
 func NewStackingOptimiser(program *lmc.Program, strategies []OStrategy) *StackingOptimiser {
 	return &StackingOptimiser{
-		program: program,
+		program:    program,
 		strategies: strategies,
 	}
 }
@@ -53,10 +65,10 @@ func (o *StackingOptimiser) Optimise() error {
 
 		if optimiser != nil {
 			if err = optimiser.Optimise(); err != nil {
-				return err
+				return fmt.Errorf("optimise error with strategy `%s`: %s", OStrategyNames[optimiser.Strategy()], err)
 			} else if s != Waste { // no point running it twice
 				if err = waste.Optimise(); err != nil {
-					return err
+					return fmt.Errorf("waste strategy error: %s", err)
 				}
 			}
 		}
@@ -72,4 +84,3 @@ func (o *StackingOptimiser) Program() *lmc.Program {
 func (o *StackingOptimiser) Strategy() OStrategy {
 	return Stacking
 }
-
