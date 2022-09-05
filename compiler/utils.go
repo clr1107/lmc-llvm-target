@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"github.com/clr1107/lmc-llvm-target/compiler/errors"
 	"github.com/clr1107/lmc-llvm-target/lmc"
 	"github.com/llir/llvm/ir"
 	"reflect"
@@ -43,18 +44,18 @@ func GetLLEntry(module *ir.Module) *ir.Func {
 func ReflectGetLocalID(x interface{}) (lmc.Address, error) {
 	f := reflect.ValueOf(x).MethodByName("ID")
 	if f.IsZero() {
-		return -1, E_NonexistentProperty("#ID()", nil)
+		return -1, errors.E_NonexistentProperty("#ID()", nil)
 	}
 
 	res := f.Call(nil)
 	if len(res) != 1 {
-		return -1, E_NonexistentProperty("#ID() []", nil)
+		return -1, errors.E_NonexistentProperty("#ID() []", nil)
 
 	}
 
 	id := res[0]
 	if id.Kind() != reflect.Int64 {
-		return -1, E_IncorrectTypes(nil, "#ID() int64")
+		return -1, errors.E_IncorrectType(nil, "#ID()", id.Kind().String(), "int64")
 	}
 
 	return lmc.Address(id.Int()), nil
@@ -63,7 +64,7 @@ func ReflectGetLocalID(x interface{}) (lmc.Address, error) {
 func ReflectGetProperty(x interface{}, field string) (interface{}, error) {
 	property := reflect.ValueOf(x).FieldByName(field)
 	if property.IsZero() {
-		return nil, E_NonexistentProperty("#"+field, nil)
+		return nil, errors.E_NonexistentProperty("#"+field, nil)
 	}
 
 	return property.Interface(), nil

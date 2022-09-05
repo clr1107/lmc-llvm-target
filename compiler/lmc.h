@@ -7,14 +7,14 @@
  */
 #define _TEMP ((void *) 0)
 
-// types available for use
+// Types available for use
 typedef int number_t;
 
 // Entry point
 void _lmc(void);
 
 /**
- * Output a number at a mailbox.
+ * Output the value in a mailbox
  */
 extern void output(number_t *);
 

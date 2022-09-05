@@ -1,4 +1,4 @@
-package compiler
+package errors
 
 import (
 	"fmt"
@@ -13,19 +13,23 @@ type ErrorCode uint8
 const (
 	LMCError ErrorCode = iota
 	NonexistentPropertyError
-	IncorrectTypesError
+	IncorrectTypeError
 	InvalidLLTypesError
 	UnknownMailboxError
 	UnknownLLInstructionError
+	BuiltinInvocationError
+	UnknownBuiltinError
 )
 
 var ErrorNames = map[ErrorCode]string{
 	LMCError:                  "LMC_LIB",
 	NonexistentPropertyError:  "NONEXISTENT_PROPERTY",
-	IncorrectTypesError:       "INCORRECT_TYPES",
+	IncorrectTypeError:        "INCORRECT_TYPE",
 	InvalidLLTypesError:       "INVALID_LL_TYPES",
 	UnknownMailboxError:       "UNKNOWN_MAILBOX",
 	UnknownLLInstructionError: "UNKNOWN_LL_INSTRUCTION",
+	BuiltinInvocationError:    "BUILTIN_INVOCATION",
+	UnknownBuiltinError:       "UNKNOWN_BUILTIN",
 }
 
 type Error struct {
@@ -67,12 +71,12 @@ func E_NonexistentProperty(property string, child error) *Error {
 	return NewError(NonexistentPropertyError, fmt.Sprintf("nonexistent property `%s`", property), child)
 }
 
-func E_IncorrectTypes(child error, types ...string) *Error {
-	return NewError(IncorrectTypesError, fmt.Sprintf("incorrect types %s", strings.Join(types, ", ")), child)
+func E_IncorrectType(child error, value string, got string, expected string) *Error {
+	return NewError(IncorrectTypeError, fmt.Sprintf("incorrect type for %s got %s expected %s", value, got, expected), child)
 }
 
 func E_InvalidLLTypes(child error, types ...string) *Error {
-	return NewError(IncorrectTypesError, fmt.Sprintf("invalid LL types %s", strings.Join(types, ", ")), child)
+	return NewError(InvalidLLTypesError, fmt.Sprintf("invalid LL types %s", strings.Join(types, ", ")), child)
 }
 
 func E_UnknownMailbox(addr lmc.Address, child error) *Error {
@@ -85,4 +89,12 @@ func E_UnknownLLInstruction(instr ir.Instruction, child error) *Error {
 		fmt.Sprintf("unknown LL instruction type %s", reflect.TypeOf(instr)),
 		child,
 	)
+}
+
+func E_BuiltinInvocation(signature string, child error) *Error {
+	return NewError(BuiltinInvocationError, fmt.Sprintf("invocation %s", signature), child)
+}
+
+func E_UnknownBuiltin(name string, child error) *Error {
+	return NewError(UnknownBuiltinError, fmt.Sprintf("unknown builtin function %s", name), child)
 }

@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"github.com/clr1107/lmc-llvm-target/compiler/errors"
 	"github.com/clr1107/lmc-llvm-target/compiler/instructions"
 	"github.com/clr1107/lmc-llvm-target/lmc"
 	"github.com/llir/llvm/ir"
@@ -32,11 +33,12 @@ func (compiler *Compiler) GetTempBox() *lmc.MemoryOp {
 }
 
 func (compiler *Compiler) GetMailboxFromLL(ll interface{}) (*lmc.MemoryOp, error) {
-	switch ll.(type) {
+	switch x := ll.(type) {
 	case *constant.Null:
 		return compiler.GetTempBox(), nil
 	case *constant.Int:
-		return compiler.Prog.Memory.Constant(lmc.Value(ll.(*constant.Int).X.Int64())), nil
+		return compiler.Prog.Memory.Constant(lmc.Value(x.X.Int64())), nil
+	//case *ir.Param:
 	case ir.Instruction: // last try, just use reflection lol
 		id, err := ReflectGetLocalID(ll)
 		if err != nil {
@@ -45,12 +47,12 @@ func (compiler *Compiler) GetMailboxFromLL(ll interface{}) (*lmc.MemoryOp, error
 
 		mbox := compiler.Prog.Memory.GetMailboxAddress(id)
 		if mbox == nil {
-			return nil, E_UnknownMailbox(id, nil)
+			return nil, errors.E_UnknownMailbox(id, nil)
 		}
 
 		return lmc.NewMemoryOpBox1(mbox, false), nil
 	default:
-		return nil, E_InvalidLLTypes(nil, reflect.TypeOf(ll).String())
+		return nil, errors.E_InvalidLLTypes(nil, reflect.TypeOf(ll).String())
 	}
 }
 
@@ -78,9 +80,12 @@ func (compiler *Compiler) CompileInst(instr ir.Instruction) (instructions.LLInst
 		return compiler.WrapLLInstLoad(cast)
 	case *ir.InstStore:
 		return compiler.WrapLLInstStore(cast)
+	// other
+	case *ir.InstCall:
+		return compiler.WrapLLInstCall(cast)
 	// unknown
 	default:
-		return nil, E_UnknownLLInstruction(instr, nil)
+		return nil, errors.E_UnknownLLInstruction(instr, nil)
 	}
 }
 
@@ -91,13 +96,13 @@ func (compiler *Compiler) AddCompiledInstruction(instr instructions.LLInstructio
 	for _, op := range instr.LMCOps() {
 		for _, box := range op.GetNewBoxes() {
 			if err := compiler.Prog.Memory.AddMailbox(box); err != nil {
-				return E_LMC("adding compiled instruction -- CONSIDER *Program#AddMemoryOp", err)
+				return errors.E_LMC("adding compiled instruction -- dev: CONSIDER *Program#AddMemoryOp", err)
 			}
 		}
 
 		for _, label := range op.GetNewLabels() {
 			if err := compiler.Prog.Memory.AddLabel(label); err != nil {
-				return E_LMC("adding compiled instr label -- CONSIDER *Program#AddMemoryOp", err)
+				return errors.E_LMC("adding compiled instr label -- dev: CONSIDER *Program#AddMemoryOp", err)
 			}
 		}
 
