@@ -1,14 +1,14 @@
 #ifndef _LMC_BUILTIN_H
 #define _LMC_BUILTIN_H
 
+// Types available for use
+typedef int number_t;
+
 /**
  * The NULL pointer points to the temp mailbox, if there is one. If it does not
  * exist, this will cause it to be created.
  */
-#define _TEMP ((volatile int *) 0)
-
-// Types available for use
-typedef int number_t;
+#define _TEMP ((number_t *) 0)
 
 // Entry point
 void _lmc(void);

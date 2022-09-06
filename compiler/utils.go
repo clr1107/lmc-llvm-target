@@ -4,6 +4,7 @@ import (
 	"github.com/clr1107/lmc-llvm-target/compiler/errors"
 	"github.com/clr1107/lmc-llvm-target/lmc"
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 	"reflect"
 )
 
@@ -68,4 +69,16 @@ func ReflectGetProperty(x interface{}, field string) (interface{}, error) {
 	}
 
 	return property.Interface(), nil
+}
+
+func ValidLLType(t types.Type) bool {
+	if types.IsInt(t) {
+		return true
+	}
+
+	if c, ok := t.(*types.PointerType); ok {
+		return ValidLLType(c.ElemType)
+	}
+
+	return false
 }
