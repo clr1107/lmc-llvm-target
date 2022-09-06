@@ -6,6 +6,7 @@ import (
 	"github.com/clr1107/lmc-llvm-target/lmc"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/value"
 	"reflect"
 )
 
@@ -39,7 +40,11 @@ func (compiler *Compiler) GetMailboxFromLL(ll interface{}) (*lmc.MemoryOp, error
 	case *constant.Int:
 		return compiler.Prog.Memory.Constant(lmc.Value(x.X.Int64())), nil
 	//case *ir.Param:
-	case ir.Instruction: // last try, just use reflection lol
+	case value.Value: // last try, just use reflection lol
+		if !ValidLLType(x.Type()) {
+			return nil, errors.E_InvalidLLTypes(nil, x.Type().String())
+		}
+
 		id, err := ReflectGetLocalID(ll)
 		if err != nil {
 			return nil, err
