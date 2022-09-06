@@ -12,6 +12,8 @@ func wrapBuiltinFunc(name string, instr *ir.InstCall, params []*lmc.Mailbox, ops
 	switch name {
 	case "input":
 		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinInput(), params, ops)
+	case "output":
+		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinOutput(), params, ops)
 	default:
 		return nil
 	}
@@ -41,7 +43,7 @@ func (compiler *Compiler) WrapLLInstCall(instr *ir.InstCall) (*instructions.WBui
 	}
 
 	if w = wrapBuiltinFunc(f.Name(), instr, params, ops); w == nil {
-		return nil, errors.E_UnknownBuiltin(f.Name(), nil)
+		return nil, errors.E_UnknownBuiltin(f, nil)
 	}
 
 	if err = w.Invoke(); err != nil {

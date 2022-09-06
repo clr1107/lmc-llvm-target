@@ -95,6 +95,6 @@ func E_BuiltinInvocation(signature string, child error) *Error {
 	return NewError(BuiltinInvocationError, fmt.Sprintf("invocation %s", signature), child)
 }
 
-func E_UnknownBuiltin(name string, child error) *Error {
-	return NewError(UnknownBuiltinError, fmt.Sprintf("unknown builtin function %s", name), child)
+func E_UnknownBuiltin(f *ir.Func, child error) *Error {
+	return NewError(UnknownBuiltinError, fmt.Sprintf("unknown builtin function %s(%d)", f.Name(), len(f.Params)), child)
 }

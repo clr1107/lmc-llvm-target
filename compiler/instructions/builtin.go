@@ -63,6 +63,9 @@ func (b *BuiltinBase) checkParams(params []*lmc.Mailbox) error {
 
 // ---------- Builtins definitions ----------
 
+// ---------- Input function ----------
+// As defined in compiler/lmc.h
+
 type BuiltinInput struct {
 	BuiltinBase
 }
@@ -86,6 +89,39 @@ func (b *BuiltinInput) Call(params []*lmc.Mailbox) *BuiltinReturn {
 		ret.Instructions = []lmc.Instruction{
 			lmc.NewInputInstr(),
 			lmc.NewStoreInstr(params[0]),
+		}
+		ret.Ops = []*lmc.MemoryOp{}
+	}
+
+	return &ret
+}
+
+// ---------- Output function ----------
+// As defined in compiler/lmc.h
+
+type BuiltinOutput struct {
+	BuiltinBase
+}
+
+func NewBuiltinOutput() *BuiltinOutput {
+	return &BuiltinOutput{
+		BuiltinBase{
+			id:         B_Output,
+			name:       "output",
+			parameters: 1,
+		},
+	}
+}
+
+func (b *BuiltinOutput) Call(params []*lmc.Mailbox) *BuiltinReturn {
+	var ret BuiltinReturn
+
+	if err := b.checkParams(params); err != nil {
+		ret.Err = err
+	} else {
+		ret.Instructions = []lmc.Instruction{
+			lmc.NewLoadInstr(params[0]),
+			lmc.NewOutputInstr(),
 		}
 		ret.Ops = []*lmc.MemoryOp{}
 	}

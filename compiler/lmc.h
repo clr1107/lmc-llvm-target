@@ -5,7 +5,7 @@
  * The NULL pointer points to the temp mailbox, if there is one. If it does not
  * exist, this will cause it to be created.
  */
-#define _TEMP ((void *) 0)
+#define _TEMP ((volatile int *) 0)
 
 // Types available for use
 typedef int number_t;
