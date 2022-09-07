@@ -24,9 +24,11 @@ func (o *OThrashing) Strategy() OStrategy {
 }
 
 func (o *OThrashing) Optimise() error {
-	var removals []int
 	previous := -1
-	instrs := o.program.Memory.GetInstructionSet().GetInstructions()
+	removed := 0
+
+	instrs := make([]lmc.Instruction, len(o.program.Memory.GetInstructionSet().GetInstructions()))
+	copy(instrs, o.program.Memory.GetInstructionSet().GetInstructions())
 
 	for i := 0; i < len(instrs); i++ {
 		var ok bool
@@ -36,11 +38,18 @@ func (o *OThrashing) Optimise() error {
 			_, ok = instrs[i].(*lmc.LoadInstr)
 		}
 
-		ok = ok && (previous == -1 || (instrs[i].Boxes()[0].Address() == instrs[previous].Boxes()[0].Address()) )
-
 		if ok {
-			if i == len(instrs) - 1 {
-				removals = append(removals, i)
+			if previous != -1 && (instrs[i].Boxes()[0].Address() != instrs[previous].Boxes()[0].Address()) {
+				previous = -1
+			}
+
+			if i == len(instrs)-1 {
+				if err := o.program.Memory.GetInstructionSet().RemoveInstruction(i - removed); err != nil {
+					return err
+				} else {
+					removed++
+				}
+
 				break
 			}
 
@@ -57,20 +66,17 @@ func (o *OThrashing) Optimise() error {
 				}
 
 				if remove {
-					removals = append(removals, i)
+					if err := o.program.Memory.GetInstructionSet().RemoveInstruction(i - removed); err != nil {
+						return err
+					} else {
+						removed++
+					}
 				} else {
 					previous = i
 				}
 			}
 		}
 	}
-
-	for k, l := range removals {
-		if err := o.program.Memory.GetInstructionSet().RemoveInstruction(l - k); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 

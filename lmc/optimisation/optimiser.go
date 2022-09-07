@@ -19,7 +19,7 @@ const (
 var OStrategyNames = map[OStrategy]string{
 	Thrashing: "thrashing",
 	Waste:     "waste",
-	BProp:     "b propogation",
+	BProp:     "box propogation",
 	Chaining:  "addition chaining",
 	Unroll:    "loop unrolling",
 	Stacking:  "OSTACK",
