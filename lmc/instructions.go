@@ -61,10 +61,10 @@ func (s *InstructionSet) AddDef(def *DataInstr) {
 	s.defInstructions = append(s.defInstructions, def)
 }
 
-func (s *InstructionSet) RemoveDef(name string) error {
+func (s *InstructionSet) RemoveDef(identifier string) error {
 	var i []int
 	for k, v := range s.defInstructions {
-		if v.name == name {
+		if v.Box.identifier == identifier {
 			i = append(i, k)
 			//break
 		}
@@ -75,7 +75,7 @@ func (s *InstructionSet) RemoveDef(name string) error {
 			s.defInstructions = append(s.defInstructions[:ii], s.defInstructions[ii+1:]...)
 		}
 	} else {
-		return VariableDoesNotExistError(name)
+		return VariableDoesNotExistError(identifier)
 	}
 
 	return nil
@@ -183,6 +183,10 @@ func (i *DataInstr) String() string {
 
 func (i *DataInstr) ACC() bool {
 	return false
+}
+
+func (i *DataInstr) Boxes() []*Mailbox {
+	return []*Mailbox{i.Box}
 }
 
 // Output form: `X DAT Y` where `X` is the box to be defined, and `Y` is the
