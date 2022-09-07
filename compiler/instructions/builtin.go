@@ -14,6 +14,7 @@ type BuiltinId uint8
 const (
 	B_Input BuiltinId = iota
 	B_Output
+	B_Halt
 )
 
 type BuiltinReturn struct {
@@ -42,7 +43,7 @@ func (b *BuiltinBase) Id() BuiltinId {
 }
 
 func (b *BuiltinBase) Name() string {
-	return "input"
+	return b.name
 }
 
 func (b *BuiltinBase) Parameters() int {
@@ -122,6 +123,38 @@ func (b *BuiltinOutput) Call(params []*lmc.Mailbox) *BuiltinReturn {
 		ret.Instructions = []lmc.Instruction{
 			lmc.NewLoadInstr(params[0]),
 			lmc.NewOutputInstr(),
+		}
+		ret.Ops = []*lmc.MemoryOp{}
+	}
+
+	return &ret
+}
+
+// ---------- Halt function ----------
+// As defined in compiler/lmc.h
+
+type BuiltinHalt struct {
+	BuiltinBase
+}
+
+func NewBuiltinHalt() *BuiltinHalt {
+	return &BuiltinHalt{
+		BuiltinBase{
+			id:         B_Halt,
+			name:       "_hlt",
+			parameters: 0,
+		},
+	}
+}
+
+func (b *BuiltinHalt) Call(params []*lmc.Mailbox) *BuiltinReturn {
+	var ret BuiltinReturn
+
+	if err := b.checkParams(params); err != nil {
+		ret.Err = err
+	} else {
+		ret.Instructions = []lmc.Instruction{
+			lmc.NewHaltInstr(),
 		}
 		ret.Ops = []*lmc.MemoryOp{}
 	}

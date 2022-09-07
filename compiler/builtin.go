@@ -14,6 +14,8 @@ func wrapBuiltinFunc(name string, instr *ir.InstCall, params []*lmc.Mailbox, ops
 		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinInput(), params, ops)
 	case "output":
 		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinOutput(), params, ops)
+	case "_hlt":
+		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinHalt(), params, ops)
 	default:
 		return nil
 	}
