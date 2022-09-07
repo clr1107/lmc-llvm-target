@@ -10,12 +10,18 @@ import (
 
 func wrapBuiltinFunc(name string, instr *ir.InstCall, params []*lmc.Mailbox, ops []*lmc.MemoryOp) *instructions.WBuiltinCall {
 	switch name {
+	case "_hlt":
+		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinHltInstr(), params, ops)
+	case "_inp":
+		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinInpInstr(), params, ops)
+	case "_out":
+		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinOutInstr(), params, ops)
+	case "_sta":
+		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinStaInstr(), params, ops)
 	case "input":
 		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinInput(), params, ops)
 	case "output":
 		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinOutput(), params, ops)
-	case "_hlt":
-		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinHalt(), params, ops)
 	default:
 		return nil
 	}

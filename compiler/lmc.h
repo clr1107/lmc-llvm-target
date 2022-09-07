@@ -3,22 +3,46 @@
 
 // Types available for use
 typedef int number_t;
+typedef int bool_t;
 
 /**
  * The NULL pointer points to the temp mailbox, if there is one. If it does not
  * exist, this will cause it to be created.
  */
 #define _TEMP ((number_t *) 0)
+#define true ((bool_t) 1)
+#define false ((bool_t) 0)
 
 // Entry point.
 void _lmc(void);
 
 /**
- * Halt the program. Inserts an `HLT` instruction.
+ * `HLT` instruction.
  *
  * [Builtin]
  */
 extern void _hlt(void);
+
+/**
+ * `INP` instruction.
+ *
+ * [Builtin]
+ */
+extern void _inp(void);
+
+/**
+ * `OUT` instruction.
+ *
+ * [Builtin]
+ */
+extern void _out(void);
+
+/**
+ * `STA` instruction.
+ *
+ * [Builtin]
+ */
+extern void _sta(number_t *);
 
 /**
  * Output the value in a mailbox.

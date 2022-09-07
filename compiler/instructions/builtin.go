@@ -12,9 +12,12 @@ import (
 type BuiltinId uint8
 
 const (
-	B_Input BuiltinId = iota
+	B_Inp BuiltinId = iota
+	B_Out
+	B_Hlt
+	B_Sta
+	B_Input
 	B_Output
-	B_Halt
 )
 
 type BuiltinReturn struct {
@@ -130,36 +133,81 @@ func (b *BuiltinOutput) Call(params []*lmc.Mailbox) *BuiltinReturn {
 	return &ret
 }
 
-// ---------- Halt function ----------
+// ---------- `STA` function ----------
 // As defined in compiler/lmc.h
 
-type BuiltinHalt struct {
+type BuiltinStaInstr struct {
 	BuiltinBase
 }
 
-func NewBuiltinHalt() *BuiltinHalt {
-	return &BuiltinHalt{
+func NewBuiltinStaInstr() *BuiltinStaInstr {
+	return &BuiltinStaInstr{
 		BuiltinBase{
-			id:         B_Halt,
-			name:       "_hlt",
-			parameters: 0,
+			id:         B_Sta,
+			name:       "_sta",
+			parameters: 1,
 		},
 	}
 }
 
-func (b *BuiltinHalt) Call(params []*lmc.Mailbox) *BuiltinReturn {
+func (b *BuiltinStaInstr) Call(params []*lmc.Mailbox) *BuiltinReturn {
 	var ret BuiltinReturn
 
 	if err := b.checkParams(params); err != nil {
 		ret.Err = err
 	} else {
 		ret.Instructions = []lmc.Instruction{
-			lmc.NewHaltInstr(),
+			lmc.NewStoreInstr(params[0]),
 		}
 		ret.Ops = []*lmc.MemoryOp{}
 	}
 
 	return &ret
+}
+
+// ---------- Unary instruction functions ----------
+
+type BuiltinUnaryInstrFunc struct {
+	BuiltinBase
+	Instruction lmc.Instruction
+}
+
+func NewBuiltinInstrFunc(id BuiltinId, name string, instr lmc.Instruction) *BuiltinUnaryInstrFunc {
+	return &BuiltinUnaryInstrFunc{
+		Instruction: instr,
+		BuiltinBase: BuiltinBase{
+			id:         id,
+			name:       name,
+			parameters: 0,
+		},
+	}
+}
+
+func (b *BuiltinUnaryInstrFunc) Call(params []*lmc.Mailbox) *BuiltinReturn {
+	var ret BuiltinReturn
+
+	if err := b.checkParams(params); err != nil {
+		ret.Err = err
+	} else {
+		ret.Instructions = []lmc.Instruction{
+			b.Instruction,
+		}
+		ret.Ops = []*lmc.MemoryOp{}
+	}
+
+	return &ret
+}
+
+func NewBuiltinOutInstr() *BuiltinUnaryInstrFunc {
+	return NewBuiltinInstrFunc(B_Out, "_out", lmc.NewOutputInstr())
+}
+
+func NewBuiltinInpInstr() *BuiltinUnaryInstrFunc {
+	return NewBuiltinInstrFunc(B_Inp, "_inp", lmc.NewInputInstr())
+}
+
+func NewBuiltinHltInstr() *BuiltinUnaryInstrFunc {
+	return NewBuiltinInstrFunc(B_Hlt, "_hlt", lmc.NewHaltInstr())
 }
 
 // ---------- WBuiltinCall ----------
