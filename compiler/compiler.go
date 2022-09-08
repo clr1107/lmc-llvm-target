@@ -42,7 +42,7 @@ func (compiler *Compiler) GetMailboxFromLL(ll interface{}) (*lmc.MemoryOp, error
 	//case *ir.Param:
 	case value.Value: // last try, just use reflection lol
 		if !ValidLLType(x.Type()) {
-			return nil, errors.E_InvalidLLTypes(nil, x.Type().String())
+			return nil, errors.E_InvalidLLTypes(nil, x.Type().LLString())
 		}
 
 		id, err := ReflectGetLocalID(ll)
@@ -61,7 +61,13 @@ func (compiler *Compiler) GetMailboxFromLL(ll interface{}) (*lmc.MemoryOp, error
 	}
 }
 
-func (compiler *Compiler) CompileInst(instr ir.Instruction) (instructions.LLInstructionWrapper, error) {
+type Compilation struct {
+	Wrapped  instructions.LLInstructionWrapper
+	Err      error
+	Warnings []*errors.Warning
+}
+
+func (compiler *Compiler) CompileInst(instr ir.Instruction) *Compilation {
 	switch cast := instr.(type) {
 	// arithmetic
 	case *ir.InstAdd:
@@ -88,9 +94,11 @@ func (compiler *Compiler) CompileInst(instr ir.Instruction) (instructions.LLInst
 	// other
 	case *ir.InstCall:
 		return compiler.WrapLLInstCall(cast)
+	case *ir.InstBitCast:
+		return compiler.WrapLLBitcast(cast)
 	// unknown
 	default:
-		return nil, errors.E_UnknownLLInstruction(instr, nil)
+		return &Compilation{Err: errors.E_UnknownLLInstruction(instr, nil)}
 	}
 }
 
@@ -116,4 +124,44 @@ func (compiler *Compiler) AddCompiledInstruction(instr instructions.LLInstructio
 
 	compiler.Prog.AddInstructions(instr.LMCInstructions(), defs)
 	return nil
+}
+
+// ---------- Wrapping of other instructions ----------
+
+func (compiler *Compiler) WrapLLBitcast(instr *ir.InstBitCast) *Compilation {
+	var compilation Compilation
+
+	if ValidLLType(instr.From.Type()) && ValidLLType(instr.To) {
+		compilation.Warnings = []*errors.Warning{
+			errors.W_Bitcast(instr.From.Type().LLString(), instr.To.LLString()),
+		}
+	} else {
+		compilation.Err = errors.E_InvalidLLTypes(nil, instr.From.Type().LLString(), instr.To.LLString())
+		return &compilation
+	}
+
+	var fromBox *lmc.Mailbox
+	var toBox *lmc.Mailbox
+	var ops []*lmc.MemoryOp
+	var op *lmc.MemoryOp
+	var err error
+
+	if op, err = compiler.GetMailboxFromLL(instr.From); err != nil {
+		compilation.Err = err
+		return &compilation
+	} else {
+		fromBox = op.Boxes[0].Box
+		ops = append(ops, op)
+	}
+
+	toBox = compiler.Prog.Memory.GetMailboxAddress(lmc.Address(instr.ID()))
+	if toBox == nil {
+		op := compiler.Prog.Memory.NewMailbox(lmc.Address(instr.ID()), "")
+		toBox = op.Boxes[0].Box
+
+		ops = append(ops, op)
+	}
+
+	compilation.Wrapped = instructions.NewWInstBitcast(instr, fromBox, toBox, ops)
+	return &compilation
 }

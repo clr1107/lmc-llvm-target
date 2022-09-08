@@ -28,13 +28,22 @@ func main() {
 	for _, block := range f.Blocks {
 		for _, instr := range block.Insts {
 
-			if wrapped, err := c.CompileInst(instr); err != nil {
-				fmt.Printf("could not compile instruction: %s\n\t%s\n", instr.LLString(), err)
+			if compiled := c.CompileInst(instr); compiled.Err != nil {
+				fmt.Printf("could not compile instruction: %s\n\t%s\n", instr.LLString(), compiled.Err)
 				os.Exit(1)
 			} else {
-				if err := c.AddCompiledInstruction(wrapped); err != nil {
-					fmt.Printf("could not add a compiled instruction: %s\n\t%s\n", instr.LLString(), err)
-					os.Exit(1)
+				if len(compiled.Warnings) > 0 {
+					fmt.Printf("Warnings: %s\n", instr.LLString())
+					for _, w := range compiled.Warnings {
+						fmt.Printf("\t%s\n", w)
+					}
+				}
+
+				if compiled.Wrapped != nil {
+					if err := c.AddCompiledInstruction(compiled.Wrapped); err != nil {
+						fmt.Printf("could not add a compiled instruction: %s\n\t%s\n", instr.LLString(), err)
+						os.Exit(1)
+					}
 				}
 			}
 
@@ -45,7 +54,7 @@ func main() {
 	fmt.Printf("\n\n")
 
 	optimiser := optimisation.NewStackingOptimiser(c.Prog, []optimisation.OStrategy{
-		optimisation.Thrashing, optimisation.Waste,
+		optimisation.Thrashing, optimisation.BProp,
 	})
 
 	if err := optimiser.Optimise(); err != nil {

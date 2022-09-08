@@ -10,6 +10,7 @@ import (
 
 func wrapBuiltinFunc(name string, instr *ir.InstCall, params []*lmc.Mailbox, ops []*lmc.MemoryOp) *instructions.WBuiltinCall {
 	switch name {
+	// Instruction functions
 	case "_hlt":
 		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinHltInstr(), params, ops)
 	case "_inp":
@@ -18,6 +19,7 @@ func wrapBuiltinFunc(name string, instr *ir.InstCall, params []*lmc.Mailbox, ops
 		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinOutInstr(), params, ops)
 	case "_sta":
 		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinStaInstr(), params, ops)
+	// Other
 	case "input":
 		return instructions.NewWBuiltinCall(instr, instructions.NewBuiltinInput(), params, ops)
 	case "output":
@@ -27,14 +29,16 @@ func wrapBuiltinFunc(name string, instr *ir.InstCall, params []*lmc.Mailbox, ops
 	}
 }
 
-func (compiler *Compiler) WrapLLInstCall(instr *ir.InstCall) (*instructions.WBuiltinCall, error) {
+func (compiler *Compiler) WrapLLInstCall(instr *ir.InstCall) *Compilation {
 	var f *ir.Func
 	var w *instructions.WBuiltinCall
 	var ok bool
 	var err error
 
 	if f, ok = instr.Callee.(*ir.Func); !ok {
-		return nil, errors.E_IncorrectType(nil, "*ir.Func.Callee", reflect.TypeOf(instr.Callee).String(), "*ir.Func")
+		return &Compilation{
+			Err: errors.E_IncorrectType(nil, "*ir.Func.Callee", reflect.TypeOf(instr.Callee).String(), "*ir.Func"),
+		}
 	}
 
 	var op *lmc.MemoryOp
@@ -43,7 +47,7 @@ func (compiler *Compiler) WrapLLInstCall(instr *ir.InstCall) (*instructions.WBui
 
 	for _, a := range instr.Args {
 		if op, err = compiler.GetMailboxFromLL(a); err != nil {
-			return nil, err
+			return &Compilation{Err: err}
 		}
 
 		ops = append(ops, op)
@@ -51,12 +55,12 @@ func (compiler *Compiler) WrapLLInstCall(instr *ir.InstCall) (*instructions.WBui
 	}
 
 	if w = wrapBuiltinFunc(f.Name(), instr, params, ops); w == nil {
-		return nil, errors.E_UnknownBuiltin(f, nil)
+		return &Compilation{Err: errors.E_UnknownBuiltin(f, nil)}
 	}
 
 	if err = w.Invoke(); err != nil {
-		return nil, err
+		return &Compilation{Err: err}
 	}
 
-	return w, nil
+	return &Compilation{Wrapped: w}
 }

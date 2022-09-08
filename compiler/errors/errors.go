@@ -21,7 +21,7 @@ const (
 	UnknownBuiltinError
 )
 
-var ErrorNames = map[ErrorCode]string{
+var errorNames = map[ErrorCode]string{
 	LMCError:                  "LMC_LIB",
 	NonexistentPropertyError:  "NONEXISTENT_PROPERTY",
 	IncorrectTypeError:        "INCORRECT_TYPE",
@@ -48,7 +48,7 @@ func NewError(code ErrorCode, msg string, child error) *Error {
 }
 
 func (e *Error) Error() string {
-	s := fmt.Sprintf("%d=%s; %s", e.Code, ErrorNames[e.Code], e.msg)
+	s := fmt.Sprintf("%d=%s; %s", e.Code, errorNames[e.Code], e.msg)
 
 	if e.Child != nil {
 		s += ": " + e.Child.Error()
@@ -76,7 +76,12 @@ func E_IncorrectType(child error, value string, got string, expected string) *Er
 }
 
 func E_InvalidLLTypes(child error, types ...string) *Error {
-	return NewError(InvalidLLTypesError, fmt.Sprintf("invalid LL types %s", strings.Join(types, ", ")), child)
+	spacer := ""
+	if len(types) > 0 {
+		spacer = " "
+	}
+
+	return NewError(InvalidLLTypesError, fmt.Sprintf("invalid LL types%s%s", spacer, strings.Join(types, ", ")), child)
 }
 
 func E_UnknownMailbox(addr lmc.Address, child error) *Error {
