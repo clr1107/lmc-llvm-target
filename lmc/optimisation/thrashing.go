@@ -1,6 +1,7 @@
 package optimisation
 
 import (
+	"fmt"
 	"github.com/clr1107/lmc-llvm-target/lmc"
 )
 
@@ -9,26 +10,13 @@ import (
 // Find pairs of store/load instructions (non-similar pairs are allowed) operating on the same box. If the instructions
 // between them are not accumulating instructions then the second of the pair can be removed.
 
-type OThrashing struct {
-	program *lmc.Program
-}
-
-func NewOThrashing(program *lmc.Program) *OThrashing {
-	return &OThrashing{
-		program: program,
-	}
-}
-
-func (o *OThrashing) Strategy() OStrategy {
-	return Thrashing
-}
-
-func (o *OThrashing) Optimise() error {
-	var removals []int
+func thrash(prog *lmc.Program) error {
 	previous := -1
-	instrs := o.program.Memory.GetInstructionSet().GetInstructions()
 
-	for i := 0; i < len(instrs); i++ {
+	instrs := make([]lmc.Instruction, len(prog.Memory.GetInstructionSet().GetInstructions()))
+	copy(instrs, prog.Memory.GetInstructionSet().GetInstructions())
+
+	for i, removed := 0, 0; i < len(instrs); i++ {
 		var ok bool
 
 		_, ok = instrs[i].(*lmc.StoreInstr)
@@ -36,11 +24,18 @@ func (o *OThrashing) Optimise() error {
 			_, ok = instrs[i].(*lmc.LoadInstr)
 		}
 
-		ok = ok && (previous == -1 || (instrs[i].Boxes()[0].Address() == instrs[previous].Boxes()[0].Address()) )
-
 		if ok {
-			if i == len(instrs) - 1 {
-				removals = append(removals, i)
+			if previous != -1 && (instrs[i].Boxes()[0].Address() != instrs[previous].Boxes()[0].Address()) {
+				previous = -1
+			}
+
+			if i == len(instrs)-1 {
+				if err := prog.Memory.GetInstructionSet().RemoveInstruction(i - removed); err != nil {
+					return err
+				} else {
+					removed++
+				}
+
 				break
 			}
 
@@ -57,7 +52,11 @@ func (o *OThrashing) Optimise() error {
 				}
 
 				if remove {
-					removals = append(removals, i)
+					if err := prog.Memory.GetInstructionSet().RemoveInstruction(i - removed); err != nil {
+						return err
+					} else {
+						removed++
+					}
 				} else {
 					previous = i
 				}
@@ -65,10 +64,26 @@ func (o *OThrashing) Optimise() error {
 		}
 	}
 
-	for k, l := range removals {
-		if err := o.program.Memory.GetInstructionSet().RemoveInstruction(l - k); err != nil {
-			return err
-		}
+	return nil
+}
+
+type OThrashing struct {
+	program *lmc.Program
+}
+
+func NewOThrashing(program *lmc.Program) *OThrashing {
+	return &OThrashing{
+		program: program,
+	}
+}
+
+func (o *OThrashing) Strategy() OStrategy {
+	return Thrashing
+}
+
+func (o *OThrashing) Optimise() error {
+	if err := thrash(o.program); err != nil {
+		return fmt.Errorf("thrashing failed: %s", err)
 	}
 
 	return nil

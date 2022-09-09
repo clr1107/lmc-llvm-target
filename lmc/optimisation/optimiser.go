@@ -17,11 +17,11 @@ const (
 )
 
 var OStrategyNames = map[OStrategy]string{
-	Thrashing: "thrashing",
-	Waste:     "waste",
-	BProp:     "b propogation",
-	Chaining:  "addition chaining",
-	Unroll:    "loop unrolling",
+	Thrashing: "THRASHING",
+	Waste:     "WASTE",
+	BProp:     "BOX_PROPAGATION",
+	Chaining:  "ADD_CHAIN",
+	Unroll:    "UROLL",
 	Stacking:  "OSTACK",
 }
 
@@ -49,6 +49,8 @@ func (o *StackingOptimiser) createStrategy(s OStrategy) Optimiser {
 		return NewOThrashing(o.program)
 	case Waste:
 		return NewOWaste(o.program)
+	case BProp:
+		return NewOProp(o.program)
 	default:
 		return nil
 	}
@@ -65,10 +67,10 @@ func (o *StackingOptimiser) Optimise() error {
 
 		if optimiser != nil {
 			if err = optimiser.Optimise(); err != nil {
-				return fmt.Errorf("optimise error with strategy `%s`: %s", OStrategyNames[optimiser.Strategy()], err)
+				return fmt.Errorf("stacking optimisation, strategy %s: %s", OStrategyNames[optimiser.Strategy()], err)
 			} else if s != Waste { // no point running it twice
 				if err = waste.Optimise(); err != nil {
-					return fmt.Errorf("waste strategy error: %s", err)
+					return fmt.Errorf("stacking waste cycle error: %s", err)
 				}
 			}
 		}

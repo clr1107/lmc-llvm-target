@@ -35,6 +35,9 @@ var (
 	VariableDoesNotExistError = func(name string) error {
 		return fmt.Errorf("variable `%s` does not exist", name)
 	}
+	OptimisationError = func(name string, child error) error {
+		return fmt.Errorf("optimisation %s failed: %s", name, child)
+	}
 )
 
 type LMCType interface {
