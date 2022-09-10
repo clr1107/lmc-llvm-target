@@ -11,7 +11,8 @@ import (
 )
 
 func main() {
-	c := compiler.NewCompiler(lmc.NewProgram(lmc.NewBasicMemory()))
+	comp := compiler.NewCompiler(lmc.NewProgram(lmc.NewBasicMemory()))
+	engine := compiler.NewEngine(comp)
 
 	mod, err := asm.ParseFile("ll/test.ll")
 	if err != nil {
@@ -26,34 +27,53 @@ func main() {
 	}
 
 	for _, block := range f.Blocks {
-		for _, instr := range block.Insts {
+		matches, err := engine.FindAll(block.Insts)
 
-			if compiled := c.CompileInst(instr); compiled.Err != nil {
-				fmt.Printf("could not compile instruction: %s\n\t%s\n", instr.LLString(), compiled.Err)
+		if err != nil {
+			fmt.Printf("error finding patterns: %s\n", err)
+			os.Exit(1)
+		}
+
+		for _, m := range matches {
+			c := m.Pattern.Compile(m.Instrs)
+
+			if c.Err != nil {
+				fmt.Printf("could not compile instructions: ")
+				for _, i := range m.Instrs {
+					fmt.Printf("%s, ", i.LLString())
+				}
+				fmt.Printf("\n")
+
+				fmt.Printf("\t%s\n", c.Err)
 				os.Exit(1)
-			} else {
-				if len(compiled.Warnings) > 0 {
-					fmt.Printf("Warnings: %s\n", instr.LLString())
-					for _, w := range compiled.Warnings {
-						fmt.Printf("\t%s\n", w)
-					}
-				}
-
-				if compiled.Wrapped != nil {
-					if err := c.AddCompiledInstruction(compiled.Wrapped); err != nil {
-						fmt.Printf("could not add a compiled instruction: %s\n\t%s\n", instr.LLString(), err)
-						os.Exit(1)
-					}
-				}
 			}
 
+			if len(c.Warnings) != 0 {
+				fmt.Printf("Warnings: ")
+				for _, i := range m.Instrs {
+					fmt.Printf("%s, ", i.LLString())
+				}
+				fmt.Printf("\n")
+
+				fmt.Printf("\t%s\n", c.Err)
+			}
+
+			if err := comp.AddCompiledInstruction(c.Wrapped); err != nil {
+				fmt.Printf("could not add compiled instruction: ")
+				for _, i := range m.Instrs {
+					fmt.Printf("%s, ", i.LLString())
+				}
+				fmt.Printf("\n")
+
+				fmt.Printf("\t%s\n", err)
+			}
 		}
 	}
 
-	fmt.Printf("Unoptimised %d instrs, %d defs:\n%s\n", len(c.Prog.Memory.GetInstructionSet().GetInstructions()), len(c.Prog.Memory.GetInstructionSet().GetDefs()), c.Prog)
+	fmt.Printf("Unoptimised %d instrs, %d defs:\n%s\n", len(comp.Prog.Memory.GetInstructionSet().GetInstructions()), len(comp.Prog.Memory.GetInstructionSet().GetDefs()), comp.Prog)
 	fmt.Printf("\n\n")
 
-	optimiser := optimisation.NewStackingOptimiser(c.Prog, []optimisation.OStrategy{
+	optimiser := optimisation.NewStackingOptimiser(comp.Prog, []optimisation.OStrategy{
 		optimisation.Thrashing, optimisation.BProp,
 	})
 

@@ -6,6 +6,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"reflect"
+	"sort"
 )
 
 func GetLLFunc(funcs []*ir.Func, name string) *ir.Func {
@@ -81,4 +82,44 @@ func ValidLLType(t types.Type) bool {
 	}
 
 	return false
+}
+
+type OrderedSlice struct {
+	s        []interface{}
+	comparer func(interface{}, interface{}) bool
+}
+
+func NewOrderedSlice(l int, comparer func(interface{}, interface{}) bool) *OrderedSlice {
+	return &OrderedSlice{
+		s:        make([]interface{}, l),
+		comparer: comparer,
+	}
+}
+
+func (o *OrderedSlice) Append(x interface{}) {
+	i := sort.Search(len(o.s), func(i int) bool {
+		return o.comparer(o.s[i], x)
+	})
+
+	if i == len(o.s) {
+		o.s = append(o.s, x)
+	} else {
+		o.s = append(o.s[:i+1], o.s[i:]...)
+		o.s[i] = x
+	}
+}
+
+func (o *OrderedSlice) Get(i int) interface{} {
+	return o.s[i]
+}
+
+func (o *OrderedSlice) Slice() []interface{} {
+	ss := make([]interface{}, len(o.s))
+	copy(ss, o.s)
+
+	return ss
+}
+
+func (o *OrderedSlice) Len() int {
+	return len(o.s)
 }
