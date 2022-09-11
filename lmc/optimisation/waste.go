@@ -1,7 +1,6 @@
 package optimisation
 
 import (
-	"fmt"
 	"github.com/clr1107/lmc-llvm-target/lmc"
 )
 
@@ -20,7 +19,6 @@ func (O *OWaste) Strategy() OStrategy {
 }
 
 func (O *OWaste) Optimise() error {
-	fmt.Printf("\n")
 	used := make(map[string]int, 0)
 
 	for _, def := range O.program.Memory.GetInstructionSet().GetDefs() {

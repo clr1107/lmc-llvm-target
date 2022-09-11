@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"fmt"
 	"github.com/clr1107/lmc-llvm-target/compiler/errors"
 	"github.com/clr1107/lmc-llvm-target/compiler/instructions"
 	"github.com/clr1107/lmc-llvm-target/lmc"
@@ -132,6 +133,52 @@ func (compiler *Compiler) WrapLLBitcast(instr *ir.InstBitCast) *Compilation {
 	return &compilation
 }
 
+func (compiler *Compiler) WrapLLInstICmp(instr *ir.InstICmp, dstId lmc.Address) *Compilation {
+	var compilation Compilation
+
+	var xBox *lmc.Mailbox
+	var yBox *lmc.Mailbox
+	var dstBox *lmc.Mailbox
+	var oneConst *lmc.Mailbox
+
+	var ops []*lmc.MemoryOp
+	var op *lmc.MemoryOp
+	var err error
+
+	if op, err = compiler.GetMailboxFromLL(instr.X); err != nil {
+		compilation.Err = err
+		return &compilation
+	} else {
+		xBox = op.Boxes[0].Box
+		ops = append(ops, op)
+	}
+
+	if op, err = compiler.GetMailboxFromLL(instr.Y); err != nil {
+		compilation.Err = err
+		return &compilation
+	} else {
+		yBox = op.Boxes[0].Box
+		ops = append(ops, op)
+	}
+
+	dstBox = compiler.Prog.Memory.GetMailboxAddress(dstId)
+	if dstBox == nil {
+		op := compiler.Prog.Memory.NewMailbox(dstId, "")
+		dstBox = op.Boxes[0].Box
+
+		ops = append(ops, op)
+	}
+
+	oneConst, err = compiler.Prog.Constant(1)
+	if err != nil {
+		compilation.Err = err
+		return &compilation
+	}
+
+	compilation.Wrapped = instructions.NewWInstICmp(instr, xBox, yBox, dstBox, oneConst, ops)
+	return &compilation
+}
+
 // ---------- Pattern matching instructions ----------
 
 type Pattern interface {
@@ -174,7 +221,7 @@ func (s *singlePattern) Priority() int {
 
 func (s *singlePattern) Compile(i []ir.Instruction) *Compilation {
 	if len(i) != 1 {
-		return nil
+		panic("instructions given to compile a single-instr pattern is not of length 1")
 	}
 
 	return s.wrapperFunc(i[0])
@@ -209,13 +256,76 @@ func singleInstWrapper(compiler *Compiler, instr ir.Instruction) *Compilation {
 		return compiler.WrapLLInstCall(cast)
 	case *ir.InstBitCast:
 		return compiler.WrapLLBitcast(cast)
+	case *ir.InstICmp:
+		return compiler.WrapLLInstICmp(cast, lmc.Address(cast.ID()))
 	// unknown
 	default:
 		return &Compilation{Err: errors.E_UnknownLLInstruction(instr, nil)}
 	}
 }
 
+// ---------- cmpZExtPattern ----------
+
+type cmpZExtPattern struct {
+	compiler *Compiler
+}
+
+func (c *cmpZExtPattern) Match(i []ir.Instruction) bool {
+	if len(i) != 2 {
+		return false
+	}
+
+	var ok bool
+	var i1 *ir.InstICmp
+	var i2 *ir.InstZExt
+
+	i1, ok = i[0].(*ir.InstICmp)
+	if ok {
+		i2, ok = i[1].(*ir.InstZExt)
+	}
+
+	if !ok {
+		return false
+	}
+
+	if i2ID, err := ReflectGetLocalID(i2.From); err != nil {
+		panic(fmt.Sprintf("could not get local id via reflection from InstZExt: %s", err))
+	} else {
+		return lmc.Address(i1.ID()) == i2ID
+	}
+}
+
+func (c *cmpZExtPattern) Find(i []ir.Instruction) [][]int {
+	var x [][]int
+
+	for j := 1; j < len(i); j++ {
+		if c.Match(i[j-1 : j+1]) {
+			x = append(x, []int{j - 1, j})
+		}
+	}
+
+	return x
+}
+
+func (c *cmpZExtPattern) Compile(i []ir.Instruction) *Compilation {
+	if len(i) != 2 {
+		panic("instructions given to compiled cmp pattern is not of length 2")
+	}
+
+	i1 := i[0].(*ir.InstICmp)
+	i2 := i[1].(*ir.InstZExt)
+
+	return c.compiler.WrapLLInstICmp(i1, lmc.Address(i2.ID()))
+}
+
+func (c *cmpZExtPattern) Priority() int {
+	return 10
+}
+
 func createPatterns(compiler *Compiler) []Pattern {
+
+	// simple patterns - start
+
 	simpleMatcherF := func(t reflect.Type) func(ir.Instruction) bool {
 		return func(instr ir.Instruction) bool {
 			return reflect.TypeOf(instr) == t
@@ -233,7 +343,7 @@ func createPatterns(compiler *Compiler) []Pattern {
 
 	for _, v := range []interface{}{
 		&ir.InstAdd{}, &ir.InstSub{}, &ir.InstMul{}, &ir.InstSDiv{}, &ir.InstSRem{}, &ir.InstURem{}, &ir.InstAlloca{},
-		&ir.InstLoad{}, &ir.InstStore{}, &ir.InstCall{}, &ir.InstBitCast{},
+		&ir.InstLoad{}, &ir.InstStore{}, &ir.InstCall{}, &ir.InstBitCast{}, &ir.InstICmp{},
 	} {
 		patterns = append(patterns, &singlePattern{
 			matcher:     simpleMatcherF(reflect.TypeOf(v)),
@@ -241,14 +351,23 @@ func createPatterns(compiler *Compiler) []Pattern {
 		})
 	}
 
+	// simple patterns - end
+
+	// standalone patterns - start
+
+	patterns = append(patterns, &cmpZExtPattern{compiler})
+
+	// standalone patterns - end
+
 	return patterns
 }
 
 // ---------- Engine ----------
 
 type Match struct {
-	Instrs  []ir.Instruction
-	Pattern Pattern
+	Instrs     []ir.Instruction
+	Pattern    Pattern
+	firstInstr int
 }
 
 type Engine struct {
@@ -286,36 +405,40 @@ func (e *Engine) FindAll(instrs []ir.Instruction) ([]*Match, error) {
 		x := a.(Match)
 		y := b.(Match)
 
-		return x.Pattern.Priority() >= y.Pattern.Priority()
+		return x.firstInstr >= y.firstInstr
 	})
 
-	i := make([]ir.Instruction, len(instrs))
-	copy(i, instrs)
+	used := make(map[int]struct{})
 
 	for _, p := range e.patterns {
-		removed := 0
-		found := p.Find(i)
+		found := p.Find(instrs)
 
+	foundLoop:
 		for _, f := range found {
 			var ii []ir.Instruction
 
 			for _, ff := range f {
-				ii = append(ii, i[ff-removed])
-				i = append(i[:ff-removed], i[ff-removed+1:]...)
+				if _, ok := used[ff]; ok {
+					break foundLoop
+				}
 
-				removed++
+				ii = append(ii, instrs[ff])
+				used[ff] = struct{}{}
 			}
 
-			m := Match{
-				Instrs:  ii,
-				Pattern: p,
-			}
-			c.Append(m)
+			c.Append(Match{
+				Instrs:     ii,
+				Pattern:    p,
+				firstInstr: f[0],
+			})
 		}
 	}
 
-	if len(i) != 0 {
-		err = errors.E_UnknownLLInstruction(i[0], nil)
+	for k := 0; k < len(instrs); k++ {
+		if _, ok := used[k]; !ok {
+			err = errors.E_UnknownLLInstruction(instrs[k], nil)
+			break
+		}
 	}
 
 	cc := make([]*Match, c.Len())

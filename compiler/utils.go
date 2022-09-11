@@ -123,3 +123,23 @@ func (o *OrderedSlice) Slice() []interface{} {
 func (o *OrderedSlice) Len() int {
 	return len(o.s)
 }
+
+func MultiPredicate(predicate func(interface{}) bool, x ...interface{}) bool {
+	for _, v := range x {
+		if !predicate(v) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func MultiVariablePredicate(predicate func(int, interface{}) bool, x ...interface{}) bool {
+	for k, v := range x {
+		if !predicate(k, v) {
+			return false
+		}
+	}
+
+	return true
+}

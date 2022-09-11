@@ -30,7 +30,7 @@ func main() {
 		matches, err := engine.FindAll(block.Insts)
 
 		if err != nil {
-			fmt.Printf("error finding patterns: %s\n", err)
+			fmt.Printf("error pattern matching instructions\n\t%s\n", err)
 			os.Exit(1)
 		}
 
