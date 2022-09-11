@@ -12,6 +12,7 @@ type ErrorCode uint8
 
 const (
 	LMCError ErrorCode = iota
+	UnsupportedError
 	NonexistentPropertyError
 	IncorrectTypeError
 	InvalidLLTypesError
@@ -23,6 +24,7 @@ const (
 
 var errorNames = map[ErrorCode]string{
 	LMCError:                  "LMC_LIB",
+	UnsupportedError:          "UNSUPPORTED",
 	NonexistentPropertyError:  "NONEXISTENT_PROPERTY",
 	IncorrectTypeError:        "INCORRECT_TYPE",
 	InvalidLLTypesError:       "INVALID_LL_TYPES",
@@ -65,6 +67,10 @@ func E_LMC(msg string, child error) *Error {
 	}
 
 	return NewError(LMCError, fmt.Sprintf("LMC error%s", msg), child)
+}
+
+func E_Unsupported(feature string, child error) *Error {
+	return NewError(UnsupportedError, feature, child)
 }
 
 func E_NonexistentProperty(property string, child error) *Error {

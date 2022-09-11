@@ -61,16 +61,13 @@ func (w *WInstBitcast) LMCOps() []*lmc.MemoryOp {
 type iCmpMethod int
 
 const (
-	// All odd integers are neq, >=, <=
-	// All even integers are eq, >, <
-	// Integers 2 and 3 are >=, >
-	// Integers 4 and 5 are <=, <
-	iCmpEq iCmpMethod = iota
-	iCmpNeq
-	iCmpGt
-	iCmpGtEq
-	iCmpLt
+	iCmpGtEq = iota
 	iCmpLtEq
+	iCmpGt
+	iCmpLt
+	iCmpEq
+	_
+	iCmpNeq
 )
 
 type WInstICmp struct {
@@ -100,7 +97,7 @@ func NewWInstICmp(instr *ir.InstICmp, x *lmc.Mailbox, y *lmc.Mailbox, dst *lmc.M
 	case enum.IPredSLE:
 		m = iCmpLtEq
 	default:
-		panic("signed integer comparisons are unimplemented") // todo
+		panic("unsigned integer comparisons are unimplemented")
 	}
 
 	return &WInstICmp{
@@ -117,8 +114,8 @@ func (w *WInstICmp) LMCInstructions() []lmc.Instruction {
 	first := w.X
 	second := w.Y
 
-	if w.method&0x100 != 0 {
-		*first, *second = *second, *first
+	if w.method&0x1 != 0 { // if < or <=
+		first, second = second, first
 	}
 
 	instrs := []lmc.Instruction{
@@ -126,7 +123,7 @@ func (w *WInstICmp) LMCInstructions() []lmc.Instruction {
 		lmc.NewSubInstr(second),
 	}
 
-	if w.method&0x1 != 0 {
+	if w.method&0x10 != 0 && w.method < 4 { // if >= or <=
 		instrs = append(instrs, lmc.NewAddInstr(w.oneConst))
 	}
 

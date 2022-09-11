@@ -136,6 +136,11 @@ func (compiler *Compiler) WrapLLBitcast(instr *ir.InstBitCast) *Compilation {
 func (compiler *Compiler) WrapLLInstICmp(instr *ir.InstICmp, dstId lmc.Address) *Compilation {
 	var compilation Compilation
 
+	if instr.Pred >= 6 { // unsigned comparisons, for later I suppose
+		compilation.Err = errors.E_Unsupported("unsigned integer comparisons are unsupported", nil)
+		return &compilation
+	}
+
 	var xBox *lmc.Mailbox
 	var yBox *lmc.Mailbox
 	var dstBox *lmc.Mailbox
@@ -388,7 +393,7 @@ func NewEngine(compiler *Compiler) *Engine {
 
 func (e *Engine) AddPattern(p Pattern) {
 	i := sort.Search(len(e.patterns), func(i int) bool {
-		return e.patterns[i].Priority() >= p.Priority()
+		return e.patterns[i].Priority() <= p.Priority()
 	})
 
 	if i == len(e.patterns) {
