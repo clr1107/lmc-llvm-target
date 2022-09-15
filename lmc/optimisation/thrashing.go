@@ -11,11 +11,50 @@ import (
 // between them are not accumulating instructions then the second of the pair can be removed.
 
 var thrashStageNames = [...]string{
+	"THRASH_MUL_LOAD",
 	"THRASH_PAIRS",
 }
 
 func thrashErr(stage int, child error) error {
-	return fmt.Errorf("cleaning failed stage %d=%s: %s", stage, thrashStageNames[stage], child)
+	return fmt.Errorf("thrashing failed stage %d=%s: %s", stage, thrashStageNames[stage], child)
+}
+
+func thrash_mul_load(prog *lmc.Program) error {
+	// Ugly... this entire function is being redone soon. But, it works.
+	instrs := prog.Memory.GetInstructionSet().Instructions
+	previous := -1
+
+	for i, removed := 0, 0; i < len(instrs); i++ {
+
+		if _, ok := instrs[i-removed].(*lmc.LoadInstr); !ok {
+			continue
+		}
+
+		if previous == -1 {
+			previous = i
+			continue
+		}
+
+		var acc bool
+
+		for j := previous + 1; j < i; j++ {
+			if instrs[j-removed].ACC() {
+				acc = true
+				break
+			}
+		}
+
+		if !acc {
+			if err := prog.Memory.GetInstructionSet().RemoveInstruction(i - removed); err != nil {
+				return err
+			} else {
+				removed++
+			}
+		}
+
+	}
+
+	return nil
 }
 
 func thrash_pairs(prog *lmc.Program) error {
@@ -92,8 +131,10 @@ func (o *OThrashing) Strategy() OStrategy {
 func (o *OThrashing) Optimise() error {
 	var err error
 
-	if err = thrash_pairs(o.program); err != nil {
+	if err = thrash_mul_load(o.program); err != nil {
 		return thrashErr(0, err)
+	} else if err = thrash_pairs(o.program); err != nil {
+		return thrashErr(1, err)
 	}
 
 	return nil
