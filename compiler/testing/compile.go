@@ -70,11 +70,11 @@ func main() {
 		}
 	}
 
-	fmt.Printf("Unoptimised %d instrs, %d defs:\n%s\n", len(comp.Prog.Memory.GetInstructionSet().GetInstructions()), len(comp.Prog.Memory.GetInstructionSet().GetDefs()), comp.Prog)
+	fmt.Printf("Unoptimised %d instrs, %d defs:\n%s\n", len(comp.Prog.Memory.GetInstructionSet().Instructions), len(comp.Prog.Memory.GetInstructionSet().DefInstructions), comp.Prog)
 	fmt.Printf("\n\n")
 
 	optimiser := optimisation.NewStackingOptimiser(comp.Prog, []optimisation.OStrategy{
-		optimisation.Thrashing, optimisation.BProp,
+		optimisation.BProp, optimisation.Thrashing,
 	})
 
 	if err := optimiser.Optimise(); err != nil {
@@ -83,5 +83,5 @@ func main() {
 	}
 
 	prog := optimiser.Program()
-	fmt.Printf("Optimised %d instrs, %d defs:\n%s\n", len(prog.Memory.GetInstructionSet().GetInstructions()), len(prog.Memory.GetInstructionSet().GetDefs()), prog)
+	fmt.Printf("Optimised %d instrs, %d defs:\n%s\n", len(prog.Memory.GetInstructionSet().Instructions), len(prog.Memory.GetInstructionSet().DefInstructions), prog)
 }

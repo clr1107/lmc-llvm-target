@@ -10,18 +10,21 @@ import (
 // Find any boxes that merely serve a temporary purpose and remove their use, replacing them with their permanent box.
 // E.g., the pair STA A; STA X
 
-var stageNames = [...]string{
+var propStageNames = [...]string{
 	"PROP_STA_STA",
+	"PROP_TREE",
 	"PROP_LDA_STA",
 }
 
 func propErr(stage int, child error) error {
-	return fmt.Errorf("box propogation failed stage %d=%s: %s", stage, stageNames[stage], child)
+	return fmt.Errorf("box propogation failed stage %d=%s: %s", stage, propStageNames[stage], child)
 }
 
+// ---------- prop_sta_sta ----------
+
 func prop_sta_sta(prog *lmc.Program) error {
-	instrs := make([]lmc.Instruction, len(prog.Memory.GetInstructionSet().GetInstructions()))
-	copy(instrs, prog.Memory.GetInstructionSet().GetInstructions())
+	instrs := make([]lmc.Instruction, len(prog.Memory.GetInstructionSet().Instructions))
+	copy(instrs, prog.Memory.GetInstructionSet().Instructions)
 
 	for i, removed := 1, 0; i < len(instrs); i++ {
 		var ok bool
@@ -46,9 +49,87 @@ func prop_sta_sta(prog *lmc.Program) error {
 	return nil
 }
 
+// ---------- prop_tree ----------
+
+type node struct {
+	box      *lmc.Mailbox
+	children []*node
+	root     bool
+}
+
+func (n *node) add(from *lmc.Mailbox, to *lmc.Mailbox) bool {
+	if (!n.root && n.box == nil && from == nil) || (n.box != nil && n.box.Address() == from.Address()) {
+		n.children = append(n.children, &node{box: to})
+		return true
+	}
+
+	for _, c := range n.children {
+		if c.add(from, to) {
+			return true
+		}
+	}
+
+	if n.root {
+		n.children = append(n.children, &node{box: from, children: []*node{{box: to}}})
+		return true
+	}
+
+	return false
+}
+
+func (n *node) propagate(x *lmc.Mailbox, p *lmc.Program) {
+	instrs := p.Memory.GetInstructionSet().Instructions
+
+	if !n.root && n.box != nil && x != nil {
+		for _, i := range instrs {
+			if len(i.Boxes()) != 0 {
+				if i.Boxes()[0].Address() == n.box.Address() {
+					*i.Boxes()[0] = *x
+				}
+			}
+		}
+	}
+
+	for _, c := range n.children {
+		c.propagate(n.box, p)
+	}
+}
+
+func prop_tree(prog *lmc.Program) error {
+	root := node{root: true}
+
+	instrs := prog.Memory.GetInstructionSet().Instructions
+	for k, instr := range instrs {
+		var ok bool
+
+		if _, ok = instr.(*lmc.StoreInstr); !ok {
+			continue
+		}
+
+		for kk := k - 1; kk >= 0; kk-- {
+			i := instrs[kk]
+
+			if _, ok := i.(*lmc.LoadInstr); ok {
+				root.add(i.Boxes()[0], instr.Boxes()[0])
+				break
+			} else if _, ok = i.(*lmc.InputInstr); ok {
+				root.add(nil, instr.Boxes()[0])
+				break
+			} else if i.ACC() {
+				break
+			}
+		}
+	}
+
+	root.propagate(nil, prog)
+	return nil
+}
+
+// ---------- prop_lda_sta ----------
+
 func prop_lda_sta(prog *lmc.Program) error {
-	instrs := make([]lmc.Instruction, len(prog.Memory.GetInstructionSet().GetInstructions()))
-	copy(instrs, prog.Memory.GetInstructionSet().GetInstructions())
+	instrs := make([]lmc.Instruction, len(prog.Memory.GetInstructionSet().Instructions))
+	copy(instrs, prog.Memory.GetInstructionSet().Instructions)
 
 	previous := -1
 
@@ -95,6 +176,8 @@ func prop_lda_sta(prog *lmc.Program) error {
 	return nil
 }
 
+// ---------- OProp ----------
+
 type OProp struct {
 	program *lmc.Program
 }
@@ -114,8 +197,12 @@ func (o *OProp) Optimise() error {
 
 	if err = prop_sta_sta(o.program); err != nil {
 		return propErr(0, err)
-	} else if err = prop_lda_sta(o.program); err != nil {
-		return propErr(1, err)
+	}
+
+	_ = prop_tree(o.program) // currently returns no err
+
+	if err = prop_lda_sta(o.program); err != nil {
+		return propErr(2, err)
 	}
 
 	return nil

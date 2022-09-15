@@ -25,59 +25,56 @@ func formatInstrStr(name string, params []string) string {
 // InstructionSet holds all instructions along with, separately defined, data
 // instructions for defining new mailboxes.
 type InstructionSet struct {
-	instructions    []Instruction
-	defInstructions []*DataInstr
+	Instructions    []Instruction
+	DefInstructions []*DataInstr
 }
 
 func NewInstructionSet() *InstructionSet {
 	return &InstructionSet{
-		instructions:    make([]Instruction, 0),
-		defInstructions: make([]*DataInstr, 0),
+		Instructions:    make([]Instruction, 0),
+		DefInstructions: make([]*DataInstr, 0),
 	}
-}
-
-func (s *InstructionSet) GetInstructions() []Instruction {
-	return s.instructions
-}
-
-func (s *InstructionSet) GetDefs() []*DataInstr {
-	return s.defInstructions
 }
 
 func (s *InstructionSet) AddInstruction(instr Instruction) {
-	s.instructions = append(s.instructions, instr)
+	s.Instructions = append(s.Instructions, instr)
 }
 
 func (s *InstructionSet) RemoveInstruction(i int) error {
-	if i >= len(s.instructions) {
-		return CannotRemoveInstructionIndexError(i, len(s.instructions))
+	if i >= len(s.Instructions) {
+		return CannotRemoveInstructionIndexError(i, len(s.Instructions))
 	}
 
-	s.instructions = append(s.instructions[:i], s.instructions[i+1:]...)
+	s.Instructions = append(s.Instructions[:i], s.Instructions[i+1:]...)
 	return nil
 }
 
 func (s *InstructionSet) AddDef(def *DataInstr) {
-	s.defInstructions = append(s.defInstructions, def)
+	s.DefInstructions = append(s.DefInstructions, def)
 }
 
 func (s *InstructionSet) RemoveDef(identifier string) error {
-	var i []int
-	for k, v := range s.defInstructions {
-		if v.Box.identifier == identifier {
-			i = append(i, k)
-			//break
+	var i int
+	var c int
+
+	for _, x := range s.DefInstructions {
+		if x.Box.Identifier() != identifier {
+			s.DefInstructions[i] = x
+			i++
+		} else {
+			c++
 		}
 	}
 
-	if len(i) > 0 {
-		for _, ii := range i {
-			s.defInstructions = append(s.defInstructions[:ii], s.defInstructions[ii+1:]...)
-		}
-	} else {
+	if c != 0 {
 		return VariableDoesNotExistError(identifier)
 	}
 
+	for j := i; j < len(s.DefInstructions); j++ {
+		s.DefInstructions[j] = nil
+	}
+
+	s.DefInstructions = s.DefInstructions[:i]
 	return nil
 }
 
@@ -89,7 +86,7 @@ func (s *InstructionSet) LMCString() string {
 	// the length(longest label) + 1 is how many spaces to put before each instruction
 
 	var longest int
-	for _, v := range s.instructions {
+	for _, v := range s.Instructions {
 		if c, ok := v.(*Labelled); ok {
 			if len(c.Identifier()) > longest {
 				longest = len(c.Identifier())
@@ -101,7 +98,7 @@ func (s *InstructionSet) LMCString() string {
 		longest = -1
 	}
 
-	for _, v := range s.instructions {
+	for _, v := range s.Instructions {
 		if c, ok := v.(*Labelled); ok {
 			_, _ = fmt.Fprintf(
 				&buf,
@@ -120,10 +117,10 @@ func (s *InstructionSet) LMCString() string {
 		}
 	}
 
-	if len(s.defInstructions) > 0 {
+	if len(s.DefInstructions) > 0 {
 		buf.WriteRune('\n')
 
-		for _, v := range s.defInstructions {
+		for _, v := range s.DefInstructions {
 			_, _ = fmt.Fprintf(&buf, "%s\n", v.LMCString())
 		}
 	}
@@ -132,7 +129,7 @@ func (s *InstructionSet) LMCString() string {
 }
 
 func (s *InstructionSet) String() string {
-	return fmt.Sprintf("InstructionSet[%d,%d]", len(s.instructions), len(s.defInstructions))
+	return fmt.Sprintf("InstructionSet[%d,%d]", len(s.Instructions), len(s.DefInstructions))
 }
 
 // ---------- Instructions base ----------

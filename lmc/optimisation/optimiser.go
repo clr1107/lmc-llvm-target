@@ -9,7 +9,7 @@ type OStrategy uint
 
 const (
 	Thrashing OStrategy = iota
-	Waste
+	Clean
 	BProp
 	Chaining
 	Unroll
@@ -18,7 +18,7 @@ const (
 
 var OStrategyNames = map[OStrategy]string{
 	Thrashing: "THRASHING",
-	Waste:     "WASTE",
+	Clean:     "CLEAN",
 	BProp:     "BOX_PROPAGATION",
 	Chaining:  "ADD_CHAIN",
 	Unroll:    "UROLL",
@@ -47,8 +47,8 @@ func (o *StackingOptimiser) createStrategy(s OStrategy) Optimiser {
 	switch s {
 	case Thrashing:
 		return NewOThrashing(o.program)
-	case Waste:
-		return NewOWaste(o.program)
+	case Clean:
+		return NewOClean(o.program)
 	case BProp:
 		return NewOProp(o.program)
 	default:
@@ -59,7 +59,7 @@ func (o *StackingOptimiser) createStrategy(s OStrategy) Optimiser {
 func (o *StackingOptimiser) Optimise() error {
 	var optimiser Optimiser
 	var err error
-	waste := NewOWaste(o.program)
+	waste := NewOClean(o.program)
 
 	for _, s := range o.strategies {
 
@@ -68,9 +68,9 @@ func (o *StackingOptimiser) Optimise() error {
 		if optimiser != nil {
 			if err = optimiser.Optimise(); err != nil {
 				return fmt.Errorf("stacking optimisation, strategy %s: %s", OStrategyNames[optimiser.Strategy()], err)
-			} else if s != Waste { // no point running it twice
+			} else if s != Clean { // no point running it twice
 				if err = waste.Optimise(); err != nil {
-					return fmt.Errorf("stacking waste cycle error: %s", err)
+					return fmt.Errorf("stacking clean cycle error: %s", err)
 				}
 			}
 		}

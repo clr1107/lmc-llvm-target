@@ -10,11 +10,19 @@ import (
 // Find pairs of store/load instructions (non-similar pairs are allowed) operating on the same box. If the instructions
 // between them are not accumulating instructions then the second of the pair can be removed.
 
-func thrash(prog *lmc.Program) error {
+var thrashStageNames = [...]string{
+	"THRASH_PAIRS",
+}
+
+func thrashErr(stage int, child error) error {
+	return fmt.Errorf("cleaning failed stage %d=%s: %s", stage, thrashStageNames[stage], child)
+}
+
+func thrash_pairs(prog *lmc.Program) error {
 	previous := -1
 
-	instrs := make([]lmc.Instruction, len(prog.Memory.GetInstructionSet().GetInstructions()))
-	copy(instrs, prog.Memory.GetInstructionSet().GetInstructions())
+	instrs := make([]lmc.Instruction, len(prog.Memory.GetInstructionSet().Instructions))
+	copy(instrs, prog.Memory.GetInstructionSet().Instructions)
 
 	for i, removed := 0, 0; i < len(instrs); i++ {
 		var ok bool
@@ -82,8 +90,10 @@ func (o *OThrashing) Strategy() OStrategy {
 }
 
 func (o *OThrashing) Optimise() error {
-	if err := thrash(o.program); err != nil {
-		return fmt.Errorf("thrashing failed: %s", err)
+	var err error
+
+	if err = thrash_pairs(o.program); err != nil {
+		return thrashErr(0, err)
 	}
 
 	return nil
