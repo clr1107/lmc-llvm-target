@@ -15,24 +15,20 @@ func cleanErr(stage int, child error) error {
 }
 
 func clean_dead_box(prog *lmc.Program) error {
-	used := make(map[string]int, 0)
-
-	for _, def := range prog.Memory.InstructionsList.DefInstructions {
-		used[def.Boxes()[0].Identifier()] = 0
-	}
+	used := make(map[string]struct{})
 
 	for _, v := range prog.Memory.InstructionsList.Instructions {
 		for _, box := range v.Boxes() {
-			used[box.Identifier()]++
+			used[box.Identifier()] = struct{}{}
 		}
 	}
 
-	for id, c := range used {
-		if c == 0 {
-			if err := prog.Memory.InstructionsList.RemoveDef(id); err != nil {
-				return err
-			}
-			prog.Memory.RemoveMailboxIdentifier(id)
+	var ok bool
+
+	for _, def := range prog.Memory.InstructionsList.DefInstructions {
+		if _, ok = used[def.Box.Identifier()]; !ok {
+			_ = prog.Memory.InstructionsList.RemoveDef(def.Box.Identifier()) // ignore error
+			prog.Memory.RemoveMailboxIdentifier(def.Box.Identifier())
 		}
 	}
 

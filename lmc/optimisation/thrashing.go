@@ -5,11 +5,6 @@ import (
 	"github.com/clr1107/lmc-llvm-target/lmc"
 )
 
-// Thrashing optimisation
-//
-// Find pairs of store/load instructions (non-similar pairs are allowed) operating on the same box. If the instructions
-// between them are not accumulating instructions then the second of the pair can be removed.
-
 var thrashStageNames = [...]string{
 	"THRASH_MUL_LOAD",
 	"THRASH_PAIRS",
@@ -45,10 +40,11 @@ func thrash_mul_load(prog *lmc.Program) error {
 		}
 
 		if !acc {
-			if err := prog.Memory.InstructionsList.RemoveInstruction(i - removed); err != nil {
+			if err := prog.Memory.InstructionsList.RemoveInstruction(previous - removed); err != nil {
 				return err
 			} else {
 				removed++
+				previous = i
 			}
 		}
 

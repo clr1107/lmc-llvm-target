@@ -5,48 +5,13 @@ import (
 	"github.com/clr1107/lmc-llvm-target/lmc"
 )
 
-// Box propagation
-//
-// Find any boxes that merely serve a temporary purpose and remove their use, replacing them with their permanent box.
-// E.g., the pair STA A; STA X
-
 var propStageNames = [...]string{
-	"PROP_STA_STA",
 	"PROP_TREE",
 	"PROP_LDA_STA",
 }
 
 func propErr(stage int, child error) error {
 	return fmt.Errorf("box propogation failed stage %d=%s: %s", stage, propStageNames[stage], child)
-}
-
-// ---------- prop_sta_sta ----------
-
-func prop_sta_sta(prog *lmc.Program) error {
-	instrs := make([]lmc.Instruction, len(prog.Memory.InstructionsList.Instructions))
-	copy(instrs, prog.Memory.InstructionsList.Instructions)
-
-	for i, removed := 1, 0; i < len(instrs); i++ {
-		var ok bool
-
-		_, ok = instrs[i-1].(*lmc.StoreInstr)
-		if ok {
-			if _, ok2 := instrs[i].(*lmc.StoreInstr); !ok2 {
-				ok = false
-				i++
-			}
-		}
-
-		if ok {
-			if err := prog.Memory.InstructionsList.RemoveInstruction(i - 1 - removed); err != nil {
-				return err
-			} else {
-				removed++
-			}
-		}
-	}
-
-	return nil
 }
 
 // ---------- prop_tree ----------
@@ -195,14 +160,10 @@ func (o *OProp) Strategy() OStrategy {
 func (o *OProp) Optimise() error {
 	var err error
 
-	if err = prop_sta_sta(o.program); err != nil {
-		return propErr(0, err)
-	}
-
 	_ = prop_tree(o.program) // currently returns no err
 
 	if err = prop_lda_sta(o.program); err != nil {
-		return propErr(2, err)
+		return propErr(1, err)
 	}
 
 	return nil

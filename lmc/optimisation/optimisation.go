@@ -1,3 +1,4 @@
+// Package optimisation algorithm explanations can be found in OPTIMISATION.md
 package optimisation
 
 import (
