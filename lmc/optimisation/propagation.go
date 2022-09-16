@@ -23,8 +23,8 @@ func propErr(stage int, child error) error {
 // ---------- prop_sta_sta ----------
 
 func prop_sta_sta(prog *lmc.Program) error {
-	instrs := make([]lmc.Instruction, len(prog.Memory.GetInstructionSet().Instructions))
-	copy(instrs, prog.Memory.GetInstructionSet().Instructions)
+	instrs := make([]lmc.Instruction, len(prog.Memory.InstructionsList.Instructions))
+	copy(instrs, prog.Memory.InstructionsList.Instructions)
 
 	for i, removed := 1, 0; i < len(instrs); i++ {
 		var ok bool
@@ -38,7 +38,7 @@ func prop_sta_sta(prog *lmc.Program) error {
 		}
 
 		if ok {
-			if err := prog.Memory.GetInstructionSet().RemoveInstruction(i - 1 - removed); err != nil {
+			if err := prog.Memory.InstructionsList.RemoveInstruction(i - 1 - removed); err != nil {
 				return err
 			} else {
 				removed++
@@ -78,7 +78,7 @@ func (n *node) add(from *lmc.Mailbox, to *lmc.Mailbox) bool {
 }
 
 func (n *node) propagate(x *lmc.Mailbox, p *lmc.Program) {
-	instrs := p.Memory.GetInstructionSet().Instructions
+	instrs := p.Memory.InstructionsList.Instructions
 
 	if !n.root && n.box != nil && x != nil {
 		for _, i := range instrs {
@@ -98,7 +98,7 @@ func (n *node) propagate(x *lmc.Mailbox, p *lmc.Program) {
 func prop_tree(prog *lmc.Program) error {
 	root := node{root: true}
 
-	instrs := prog.Memory.GetInstructionSet().Instructions
+	instrs := prog.Memory.InstructionsList.Instructions
 	for k, instr := range instrs {
 		var ok bool
 
@@ -128,8 +128,8 @@ func prop_tree(prog *lmc.Program) error {
 // ---------- prop_lda_sta ----------
 
 func prop_lda_sta(prog *lmc.Program) error {
-	instrs := make([]lmc.Instruction, len(prog.Memory.GetInstructionSet().Instructions))
-	copy(instrs, prog.Memory.GetInstructionSet().Instructions)
+	instrs := make([]lmc.Instruction, len(prog.Memory.InstructionsList.Instructions))
+	copy(instrs, prog.Memory.InstructionsList.Instructions)
 
 	previous := -1
 
@@ -164,7 +164,7 @@ func prop_lda_sta(prog *lmc.Program) error {
 			}
 
 			if remove {
-				if err := prog.Memory.GetInstructionSet().RemoveInstruction(i - removed); err != nil {
+				if err := prog.Memory.InstructionsList.RemoveInstruction(i - removed); err != nil {
 					return err
 				} else {
 					removed++

@@ -215,20 +215,20 @@ func (m *MemoryOp) AddNewLabelOps(op ...*MemoryOpBoxPair) {
 
 // Memory handles all mailboxes (including constants), instructions, and labels.
 type Memory struct {
-	mailboxes    []*Mailbox
-	instructions *InstructionSet
-	labels       []*Label
-	constants    map[Value]*Mailbox
-	idGen        func(int) string
+	Mailboxes        []*Mailbox
+	InstructionsList *InstructionList
+	labels           []*Label
+	constants        map[Value]*Mailbox
+	idGen            func(int) string
 }
 
 func NewMemory(idGen func(int) string) *Memory {
 	return &Memory{
-		mailboxes:    make([]*Mailbox, 0),
-		instructions: NewInstructionSet(),
-		labels:       make([]*Label, 0),
-		constants:    make(map[Value]*Mailbox, 0),
-		idGen:        idGen,
+		Mailboxes:        make([]*Mailbox, 0),
+		InstructionsList: NewInstructionList(),
+		labels:           make([]*Label, 0),
+		constants:        make(map[Value]*Mailbox, 0),
+		idGen:            idGen,
 	}
 }
 
@@ -236,19 +236,11 @@ func NewBasicMemory() *Memory {
 	return NewMemory(makeIdentifierGenerator())
 }
 
-func (m *Memory) GetInstructionSet() *InstructionSet {
-	return m.instructions
-}
-
-func (m *Memory) GetMailboxes() []*Mailbox {
-	return m.mailboxes
-}
-
 // GetMailboxAddress returns the first mailbox to match the given address. Nil otherwise.
 // Only handles addresses >= 0 as -ve addresses are non-user created boxes.
 func (m *Memory) GetMailboxAddress(addr Address) *Mailbox {
 	if addr >= 0 {
-		for _, v := range m.mailboxes {
+		for _, v := range m.Mailboxes {
 			if v.Address() == addr {
 				return v
 			}
@@ -261,7 +253,7 @@ func (m *Memory) GetMailboxAddress(addr Address) *Mailbox {
 // GetMailboxIdentifier returns the first mailbox to match the given identifier.
 // Case-sensitive, obviously... Nil otherwise.
 func (m *Memory) GetMailboxIdentifier(identifier string) *Mailbox {
-	for _, v := range m.mailboxes {
+	for _, v := range m.Mailboxes {
 		if v.Identifier() == identifier {
 			return v
 		}
@@ -293,7 +285,7 @@ func (m *Memory) AddMailbox(mailbox *Mailbox) error {
 		return MailboxAlreadyExistsIdentifierError(mailbox.Identifier())
 	}
 
-	m.mailboxes = append(m.mailboxes, mailbox)
+	m.Mailboxes = append(m.Mailboxes, mailbox)
 	return nil
 }
 
@@ -301,9 +293,9 @@ func (m *Memory) AddMailbox(mailbox *Mailbox) error {
 func (m *Memory) RemoveMailboxIdentifier(identifier string) bool {
 	var i, c int
 
-	for _, b := range m.mailboxes {
+	for _, b := range m.Mailboxes {
 		if b.Identifier() != identifier {
-			m.mailboxes[i] = b
+			m.Mailboxes[i] = b
 			i++
 		} else {
 			c++
@@ -311,11 +303,11 @@ func (m *Memory) RemoveMailboxIdentifier(identifier string) bool {
 	}
 
 	if c > 0 {
-		for j := i; j < len(m.mailboxes); j++ {
-			m.mailboxes[j] = nil
+		for j := i; j < len(m.Mailboxes); j++ {
+			m.Mailboxes[j] = nil
 		}
 
-		m.mailboxes = m.mailboxes[:i]
+		m.Mailboxes = m.Mailboxes[:i]
 	}
 
 	return c > 0
@@ -325,9 +317,9 @@ func (m *Memory) RemoveMailboxIdentifier(identifier string) bool {
 func (m *Memory) RemoveMailboxAddress(address Address) bool {
 	var i, c int
 
-	for _, b := range m.mailboxes {
+	for _, b := range m.Mailboxes {
 		if b.addr != address {
-			m.mailboxes[i] = b
+			m.Mailboxes[i] = b
 			i++
 		} else {
 			c++
@@ -335,8 +327,8 @@ func (m *Memory) RemoveMailboxAddress(address Address) bool {
 	}
 
 	if c > 0 {
-		for j := i; j < len(m.mailboxes); j++ {
-			m.mailboxes[j] = nil
+		for j := i; j < len(m.Mailboxes); j++ {
+			m.Mailboxes[j] = nil
 		}
 	}
 

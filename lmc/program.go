@@ -18,10 +18,10 @@ func NewProgram(memory *Memory) *Program {
 // nothing.
 func (p *Program) AddInstructions(instrs []Instruction, defs []*DataInstr) {
 	for _, v := range instrs {
-		p.Memory.instructions.AddInstruction(v)
+		p.Memory.InstructionsList.AddInstruction(v)
 	}
 	for _, v := range defs {
-		p.Memory.instructions.AddDef(v)
+		p.Memory.InstructionsList.AddDef(v)
 	}
 }
 
@@ -96,5 +96,5 @@ func (p *Program) Constant(value Value) (*Mailbox, error) {
 }
 
 func (p *Program) String() string {
-	return p.Memory.instructions.LMCString()
+	return p.Memory.InstructionsList.LMCString()
 }

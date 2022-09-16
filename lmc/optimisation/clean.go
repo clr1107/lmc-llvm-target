@@ -17,11 +17,11 @@ func cleanErr(stage int, child error) error {
 func clean_dead_box(prog *lmc.Program) error {
 	used := make(map[string]int, 0)
 
-	for _, def := range prog.Memory.GetInstructionSet().DefInstructions {
+	for _, def := range prog.Memory.InstructionsList.DefInstructions {
 		used[def.Boxes()[0].Identifier()] = 0
 	}
 
-	for _, v := range prog.Memory.GetInstructionSet().Instructions {
+	for _, v := range prog.Memory.InstructionsList.Instructions {
 		for _, box := range v.Boxes() {
 			used[box.Identifier()]++
 		}
@@ -29,7 +29,7 @@ func clean_dead_box(prog *lmc.Program) error {
 
 	for id, c := range used {
 		if c == 0 {
-			if err := prog.Memory.GetInstructionSet().RemoveDef(id); err != nil {
+			if err := prog.Memory.InstructionsList.RemoveDef(id); err != nil {
 				return err
 			}
 			prog.Memory.RemoveMailboxIdentifier(id)
@@ -41,7 +41,7 @@ func clean_dead_box(prog *lmc.Program) error {
 
 func clean_multi_dat(prog *lmc.Program) error {
 	seen := make(map[lmc.Address]struct{})
-	instrs := prog.Memory.GetInstructionSet().DefInstructions
+	instrs := prog.Memory.InstructionsList.DefInstructions
 
 	var ok bool
 	var i int
@@ -59,7 +59,7 @@ func clean_multi_dat(prog *lmc.Program) error {
 		instrs[j] = nil
 	}
 
-	prog.Memory.GetInstructionSet().DefInstructions = instrs[:i]
+	prog.Memory.InstructionsList.DefInstructions = instrs[:i]
 	return nil
 }
 

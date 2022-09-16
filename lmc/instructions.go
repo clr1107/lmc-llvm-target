@@ -20,27 +20,27 @@ func formatInstrStr(name string, params []string) string {
 	return buf.String()
 }
 
-// ---------- InstructionSet ----------
+// ---------- InstructionList ----------
 
-// InstructionSet holds all instructions along with, separately defined, data
+// InstructionList holds all instructions along with, separately defined, data
 // instructions for defining new mailboxes.
-type InstructionSet struct {
+type InstructionList struct {
 	Instructions    []Instruction
 	DefInstructions []*DataInstr
 }
 
-func NewInstructionSet() *InstructionSet {
-	return &InstructionSet{
+func NewInstructionList() *InstructionList {
+	return &InstructionList{
 		Instructions:    make([]Instruction, 0),
 		DefInstructions: make([]*DataInstr, 0),
 	}
 }
 
-func (s *InstructionSet) AddInstruction(instr Instruction) {
+func (s *InstructionList) AddInstruction(instr Instruction) {
 	s.Instructions = append(s.Instructions, instr)
 }
 
-func (s *InstructionSet) RemoveInstruction(i int) error {
+func (s *InstructionList) RemoveInstruction(i int) error {
 	if i >= len(s.Instructions) {
 		return CannotRemoveInstructionIndexError(i, len(s.Instructions))
 	}
@@ -49,11 +49,11 @@ func (s *InstructionSet) RemoveInstruction(i int) error {
 	return nil
 }
 
-func (s *InstructionSet) AddDef(def *DataInstr) {
+func (s *InstructionList) AddDef(def *DataInstr) {
 	s.DefInstructions = append(s.DefInstructions, def)
 }
 
-func (s *InstructionSet) RemoveDef(identifier string) error {
+func (s *InstructionList) RemoveDef(identifier string) error {
 	var i int
 	var c int
 
@@ -68,19 +68,20 @@ func (s *InstructionSet) RemoveDef(identifier string) error {
 
 	if c != 0 {
 		return VariableDoesNotExistError(identifier)
+	} else {
+		for j := i; j < len(s.DefInstructions); j++ {
+			s.DefInstructions[j] = nil
+		}
+
+		s.DefInstructions = s.DefInstructions[:i]
 	}
 
-	for j := i; j < len(s.DefInstructions); j++ {
-		s.DefInstructions[j] = nil
-	}
-
-	s.DefInstructions = s.DefInstructions[:i]
 	return nil
 }
 
 // Implements LMCString by returning, as a string, the LMC instructions as a
 // program.
-func (s *InstructionSet) LMCString() string {
+func (s *InstructionList) LMCString() string {
 	var buf strings.Builder
 
 	// the length(longest label) + 1 is how many spaces to put before each instruction
@@ -128,8 +129,8 @@ func (s *InstructionSet) LMCString() string {
 	return buf.String()
 }
 
-func (s *InstructionSet) String() string {
-	return fmt.Sprintf("InstructionSet[%d,%d]", len(s.Instructions), len(s.DefInstructions))
+func (s *InstructionList) String() string {
+	return fmt.Sprintf("InstructionList[%d,%d]", len(s.Instructions), len(s.DefInstructions))
 }
 
 // ---------- Instructions base ----------

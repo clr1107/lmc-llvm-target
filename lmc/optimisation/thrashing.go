@@ -21,7 +21,7 @@ func thrashErr(stage int, child error) error {
 
 func thrash_mul_load(prog *lmc.Program) error {
 	// Ugly... this entire function is being redone soon. But, it works.
-	instrs := prog.Memory.GetInstructionSet().Instructions
+	instrs := prog.Memory.InstructionsList.Instructions
 	previous := -1
 
 	for i, removed := 0, 0; i < len(instrs); i++ {
@@ -45,7 +45,7 @@ func thrash_mul_load(prog *lmc.Program) error {
 		}
 
 		if !acc {
-			if err := prog.Memory.GetInstructionSet().RemoveInstruction(i - removed); err != nil {
+			if err := prog.Memory.InstructionsList.RemoveInstruction(i - removed); err != nil {
 				return err
 			} else {
 				removed++
@@ -60,8 +60,8 @@ func thrash_mul_load(prog *lmc.Program) error {
 func thrash_pairs(prog *lmc.Program) error {
 	previous := -1
 
-	instrs := make([]lmc.Instruction, len(prog.Memory.GetInstructionSet().Instructions))
-	copy(instrs, prog.Memory.GetInstructionSet().Instructions)
+	instrs := make([]lmc.Instruction, len(prog.Memory.InstructionsList.Instructions))
+	copy(instrs, prog.Memory.InstructionsList.Instructions)
 
 	for i, removed := 0, 0; i < len(instrs); i++ {
 		var ok bool
@@ -77,7 +77,7 @@ func thrash_pairs(prog *lmc.Program) error {
 			}
 
 			if i == len(instrs)-1 {
-				if err := prog.Memory.GetInstructionSet().RemoveInstruction(i - removed); err != nil {
+				if err := prog.Memory.InstructionsList.RemoveInstruction(i - removed); err != nil {
 					return err
 				} else {
 					removed++
@@ -99,7 +99,7 @@ func thrash_pairs(prog *lmc.Program) error {
 				}
 
 				if remove {
-					if err := prog.Memory.GetInstructionSet().RemoveInstruction(i - removed); err != nil {
+					if err := prog.Memory.InstructionsList.RemoveInstruction(i - removed); err != nil {
 						return err
 					} else {
 						removed++
