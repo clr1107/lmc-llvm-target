@@ -297,26 +297,50 @@ func (m *Memory) AddMailbox(mailbox *Mailbox) error {
 	return nil
 }
 
+// RemoveMailboxIdentifier will remove all mailboxes with the given identifier.
 func (m *Memory) RemoveMailboxIdentifier(identifier string) bool {
-	for k, b := range m.mailboxes {
-		if b.Identifier() == identifier {
-			m.mailboxes = append(m.mailboxes[:k], m.mailboxes[k+1:]...)
-			return true
+	var i, c int
+
+	for _, b := range m.mailboxes {
+		if b.Identifier() != identifier {
+			m.mailboxes[i] = b
+			i++
+		} else {
+			c++
 		}
 	}
 
-	return false
+	if c > 0 {
+		for j := i; j < len(m.mailboxes); j++ {
+			m.mailboxes[j] = nil
+		}
+
+		m.mailboxes = m.mailboxes[:i]
+	}
+
+	return c > 0
 }
 
+// RemoveMailboxAddress will remove all mailboxes with the given address.
 func (m *Memory) RemoveMailboxAddress(address Address) bool {
-	for k, b := range m.mailboxes {
-		if b.Address() == address {
-			m.mailboxes = append(m.mailboxes[:k], m.mailboxes[k+1:]...)
-			return true
+	var i, c int
+
+	for _, b := range m.mailboxes {
+		if b.addr != address {
+			m.mailboxes[i] = b
+			i++
+		} else {
+			c++
 		}
 	}
 
-	return false
+	if c > 0 {
+		for j := i; j < len(m.mailboxes); j++ {
+			m.mailboxes[j] = nil
+		}
+	}
+
+	return c > 0
 }
 
 // AddLabel will try to add a given label to the memory; returning an error if
