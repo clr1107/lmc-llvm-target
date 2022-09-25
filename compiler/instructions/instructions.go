@@ -23,6 +23,20 @@ func (base *LLInstructionBase) LLBase() []ir.Instruction {
 	return base.base
 }
 
+type EmptyWInst struct{}
+
+func (w *EmptyWInst) LMCInstructions() []lmc.Instruction {
+	return []lmc.Instruction{}
+}
+
+func (w *EmptyWInst) LMCOps() []*lmc.MemoryOp {
+	return []*lmc.MemoryOp{}
+}
+
+func (w *EmptyWInst) LLBase() []ir.Instruction {
+	return []ir.Instruction{}
+}
+
 // ---------- Other wrappers ----------
 
 // ---------- WInstBitcast ----------

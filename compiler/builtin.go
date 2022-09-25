@@ -45,6 +45,12 @@ func (compiler *Compiler) WrapLLInstCall(instr *ir.InstCall) *Compilation {
 	var ops []*lmc.MemoryOp
 	var params []*lmc.Mailbox
 
+	if f.Name() == "__lmc_option__" { // protection against accidental pattern matching. See compOptionPattern
+		return &Compilation{
+			Err: errors.E_Err("pattern matched __lmc_option__ to function call not syntax", nil),
+		}
+	}
+
 	for _, a := range instr.Args {
 		if op, err = compiler.GetMailboxFromLL(a); err != nil {
 			return &Compilation{Err: err}

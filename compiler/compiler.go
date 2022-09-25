@@ -10,18 +10,118 @@ import (
 	"github.com/llir/llvm/ir/value"
 	"reflect"
 	"sort"
+	"strconv"
+	"strings"
 )
+
+type Option struct {
+	Value     interface{}
+	Predicate func(interface{}) bool
+}
+
+func (o *Option) Set(val interface{}) bool {
+	if o.Predicate != nil && !o.Predicate(val) {
+		return false
+	}
+
+	o.Value = val
+	return true
+}
+
+type Options struct {
+	m         map[string]*Option
+	validKeys []string
+}
+
+func NewOptions() *Options {
+	var o Options
+	o.m = make(map[string]*Option)
+
+	o.validKeys = []string{
+		"WLEVEL",
+	}
+
+	return &o
+}
+
+func (o *Options) Set(key string, val interface{}) *Option {
+	var x *Option
+	var ok bool
+	var valid bool
+
+	if o.validKeys != nil {
+		for _, v := range o.validKeys {
+			if v == key {
+				valid = true
+				break
+			}
+		}
+	} else {
+		valid = true
+	}
+
+	if !valid {
+		return nil
+	}
+
+	if x, ok = o.m[key]; !ok {
+		x = &Option{}
+		o.m[key] = x
+	}
+
+	if x.Set(val) {
+		return x
+	} else {
+		return nil
+	}
+}
+
+func (o *Options) Get(key string) *Option {
+	if x, ok := o.m[key]; !ok {
+		return nil
+	} else {
+		return x
+	}
+}
+
+func (o *Options) String() string {
+	var builder strings.Builder
+
+	for k, v := range o.m {
+		builder.WriteString(fmt.Sprintf("%s: %v\n", k, v.Value))
+	}
+
+	return builder.String()
+}
 
 type Compiler struct {
 	Prog    *lmc.Program
+	Options *Options
+	Module  *ir.Module
 	tempBox *lmc.Mailbox
 }
 
 func NewCompiler(prog *lmc.Program) *Compiler {
-	return &Compiler{
-		Prog:    prog,
-		tempBox: nil,
+	var c = new(Compiler)
+
+	c.Prog = prog
+	c.Options = NewOptions()
+
+	c.setDefaultOptions()
+
+	return c
+}
+
+func (compiler *Compiler) setDefaultOptions() {
+	setAndPredicateF := func(key string, val interface{}, predicate func(interface{}) bool) {
+		if opt := compiler.Options.Set(key, val); opt != nil {
+			opt.Predicate = func(x interface{}) bool {
+				return reflect.TypeOf(x).ConvertibleTo(reflect.TypeOf(0)) && predicate(x)
+			}
+		}
 	}
+
+	setAndPredicateF("WLEVEL", errors.L_Default, func(x interface{}) bool { return x.(int) >= 0 && x.(int) <= 2 })
 }
 
 func (compiler *Compiler) GetTempBox() *lmc.MemoryOp {
@@ -184,6 +284,53 @@ func (compiler *Compiler) WrapLLInstICmp(instr *ir.InstICmp, dstId lmc.Address) 
 	return &compilation
 }
 
+func (compiler *Compiler) WrapCompOption(instr *ir.InstCall, globals []*ir.Global) *Compilation {
+	var c Compilation
+	c.Wrapped = &instructions.EmptyWInst{}
+
+	if len(instr.Args) != 2 {
+		c.Err = errors.E_InvalidOptionSyntax(fmt.Sprintf("expected 2 args, got %d", len(instr.Args)))
+		return &c
+	}
+
+	errIndex := -1
+	var val int
+	var key = new(Optional)
+
+	if cast, ok := instr.Args[1].(*constant.Int); !ok {
+		errIndex = 1
+	} else {
+		val = int(cast.X.Int64())
+
+		if cast, ok := instr.Args[0].(*constant.ExprGetElementPtr); !ok {
+			errIndex = 0
+		} else {
+			for _, g := range globals {
+				if g.Ident() == cast.Src.Ident() {
+					key.Set(strings.Trim(string(g.Init.(*constant.CharArray).X), "\x00"))
+					break
+				}
+			}
+
+			if key.Empty() {
+				c.Err = errors.E_InvalidOptionSyntax(fmt.Sprintf("could not find global string `%s`", cast.Src.Ident()))
+			}
+		}
+	}
+
+	if errIndex != -1 {
+		c.Err = errors.E_InvalidLLTypes(nil, reflect.TypeOf(instr.Args[errIndex]).String())
+	} else {
+		if key.IsSet() {
+			if opt := compiler.Options.Set(key.Get().(string), val); opt == nil {
+				c.Warnings = append(c.Warnings, errors.W_InvalidCompOption(key.Get().(string), strconv.Itoa(val)))
+			}
+		}
+	}
+
+	return &c
+}
+
 // ---------- Pattern matching instructions ----------
 
 type Pattern interface {
@@ -327,6 +474,52 @@ func (c *cmpZExtPattern) Priority() int {
 	return 10
 }
 
+// ---------- compOptionPattern ----------
+
+type compOptionPattern struct {
+	compiler *Compiler
+}
+
+func (c *compOptionPattern) Match(i []ir.Instruction) bool {
+	if len(i) != 1 {
+		return false
+	}
+
+	if call, ok := i[0].(*ir.InstCall); !ok {
+		return false
+	} else {
+		if callee, ok := call.Callee.(*ir.Func); !ok {
+			return false
+		} else {
+			return callee.Name() == "__lmc_option__"
+		}
+	}
+}
+
+func (c *compOptionPattern) Find(i []ir.Instruction) [][]int {
+	var x [][]int
+
+	for j := 0; j < len(i); j++ {
+		if c.Match(i[j : j+1]) {
+			x = append(x, []int{j})
+		}
+	}
+
+	return x
+}
+
+func (c *compOptionPattern) Compile(i []ir.Instruction) *Compilation {
+	if len(i) != 1 {
+		panic("instructions given to compiled comp option pattern is not of length 1")
+	}
+
+	return c.compiler.WrapCompOption(i[0].(*ir.InstCall), c.compiler.Module.Globals)
+}
+
+func (c *compOptionPattern) Priority() int {
+	return 100
+}
+
 func createPatterns(compiler *Compiler) []Pattern {
 
 	// simple patterns - start
@@ -361,6 +554,7 @@ func createPatterns(compiler *Compiler) []Pattern {
 	// standalone patterns - start
 
 	patterns = append(patterns, &cmpZExtPattern{compiler})
+	patterns = append(patterns, &compOptionPattern{compiler})
 
 	// standalone patterns - end
 

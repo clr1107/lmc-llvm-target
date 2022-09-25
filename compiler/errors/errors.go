@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 	"github.com/clr1107/lmc-llvm-target/lmc"
 	"github.com/llir/llvm/ir"
@@ -11,7 +12,8 @@ import (
 type ErrorCode uint8
 
 const (
-	LMCError ErrorCode = iota
+	Err ErrorCode = iota
+	LMCError
 	UnsupportedError
 	NonexistentPropertyError
 	IncorrectTypeError
@@ -20,9 +22,11 @@ const (
 	UnknownLLInstructionError
 	BuiltinInvocationError
 	UnknownBuiltinError
+	InvalidOptionSyntaxError
 )
 
 var errorNames = map[ErrorCode]string{
+	Err:                       "ERR",
 	LMCError:                  "LMC_LIB",
 	UnsupportedError:          "UNSUPPORTED",
 	NonexistentPropertyError:  "NONEXISTENT_PROPERTY",
@@ -32,6 +36,7 @@ var errorNames = map[ErrorCode]string{
 	UnknownLLInstructionError: "UNKNOWN_LL_INSTRUCTION",
 	BuiltinInvocationError:    "BUILTIN_INVOCATION",
 	UnknownBuiltinError:       "UNKNOWN_BUILTIN",
+	InvalidOptionSyntaxError:  "INVALID_OPT_SYNTAX",
 }
 
 type Error struct {
@@ -60,6 +65,14 @@ func (e *Error) Error() string {
 }
 
 // ---------- Errors definitions ----------
+
+func E_Err(msg string, child error) *Error {
+	if msg == "" {
+		msg = "compiler error"
+	}
+
+	return NewError(Err, fmt.Sprintf("%s", msg), child)
+}
 
 func E_LMC(msg string, child error) *Error {
 	if msg != "" {
@@ -108,4 +121,8 @@ func E_BuiltinInvocation(signature string, child error) *Error {
 
 func E_UnknownBuiltin(f *ir.Func, child error) *Error {
 	return NewError(UnknownBuiltinError, fmt.Sprintf("unknown builtin function %s(%d)", f.Name(), len(f.Params)), child)
+}
+
+func E_InvalidOptionSyntax(problem string) *Error {
+	return NewError(InvalidOptionSyntaxError, "invalid compiler option syntax (__lmc_option__)", errors.New(problem))
 }

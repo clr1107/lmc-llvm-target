@@ -9,10 +9,12 @@ type WarningLevel uint8
 
 const (
 	BitcastWarning WarningCode = iota
+	InvalidCompOpt
 )
 
 var warningNames = map[WarningCode]string{
 	BitcastWarning: "BITCAST",
+	InvalidCompOpt: "INVALID_COMP_OPTION",
 }
 
 const (
@@ -41,4 +43,8 @@ func (e *Warning) String() string {
 
 func W_Bitcast(from string, to string) *Warning {
 	return &Warning{Code: BitcastWarning, Level: L_Debug, msg: fmt.Sprintf("bitcast from %s to %s", from, to)}
+}
+
+func W_InvalidCompOption(key string, val string) *Warning {
+	return &Warning{Code: InvalidCompOpt, Level: L_Default, msg: fmt.Sprintf("invalid compiler option pair `%s`=%s; ignored", key, val)}
 }

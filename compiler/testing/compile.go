@@ -11,9 +11,6 @@ import (
 )
 
 func main() {
-	comp := compiler.NewCompiler(lmc.NewProgram(lmc.NewBasicMemory()))
-	engine := compiler.NewEngine(comp)
-
 	mod, err := asm.ParseFile("ll/test.ll")
 	if err != nil {
 		fmt.Printf("error whilst parsing file: %s\n", err)
@@ -25,6 +22,11 @@ func main() {
 		println("could not find entry function")
 		os.Exit(1)
 	}
+
+	comp := compiler.NewCompiler(lmc.NewProgram(lmc.NewBasicMemory()))
+	comp.Module = mod
+
+	engine := compiler.NewEngine(comp)
 
 	for _, block := range f.Blocks {
 		matches, err := engine.FindAll(block.Insts)
@@ -55,7 +57,9 @@ func main() {
 				}
 				fmt.Printf("\n")
 
-				fmt.Printf("\t%s\n", c.Err)
+				for _, w := range c.Warnings {
+					fmt.Printf("\t%s\n", w)
+				}
 			}
 
 			if err := comp.AddCompiledInstruction(c.Wrapped); err != nil {
@@ -70,7 +74,7 @@ func main() {
 		}
 	}
 
-	fmt.Printf("Unoptimised %d instrs, %d defs:\n%s\n", len(comp.Prog.Memory.InstructionsList.Instructions), len(comp.Prog.Memory.InstructionsList.DefInstructions), comp.Prog)
+	fmt.Printf("\nUnoptimised %d instrs, %d defs:\n%s\n", len(comp.Prog.Memory.InstructionsList.Instructions), len(comp.Prog.Memory.InstructionsList.DefInstructions), comp.Prog)
 	fmt.Printf("\n\n")
 
 	optimiser := optimisation.NewStackingOptimiser(comp.Prog, []optimisation.OStrategy{
@@ -84,4 +88,6 @@ func main() {
 
 	prog := optimiser.Program()
 	fmt.Printf("Optimised %d instrs, %d defs:\n%s\n", len(prog.Memory.InstructionsList.Instructions), len(prog.Memory.InstructionsList.DefInstructions), prog)
+
+	fmt.Printf("\n\nCompiler options:\n%s\n", comp.Options)
 }

@@ -143,3 +143,53 @@ func MultiVariablePredicate(predicate func(int, interface{}) bool, x ...interfac
 
 	return true
 }
+
+type Optional struct {
+	value interface{}
+	set   bool
+}
+
+func NewOptional(val interface{}) *Optional {
+	return &Optional{
+		set:   true,
+		value: val,
+	}
+}
+
+func (o *Optional) Get() interface{} {
+	if !o.set {
+		panic("invoked #get on Optional that has not been set")
+	}
+
+	return o.value
+}
+
+func (o *Optional) GetDefault(def interface{}) interface{} {
+	if !o.set {
+		return def
+	} else {
+		return o.value
+	}
+}
+
+func (o *Optional) Set(val interface{}) {
+	o.value = val
+	o.set = true
+}
+
+func (o *Optional) SetSoft(val interface{}) bool {
+	if !o.set {
+		o.Set(val)
+		return true
+	}
+
+	return false
+}
+
+func (o *Optional) IsSet() bool {
+	return o.set
+}
+
+func (o *Optional) Empty() bool {
+	return !o.set
+}
