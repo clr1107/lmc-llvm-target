@@ -4,10 +4,12 @@ package main
 import (
 	"fmt"
 	"github.com/clr1107/lmc-llvm-target/compiler"
+	"github.com/clr1107/lmc-llvm-target/compiler/errors"
 	"github.com/clr1107/lmc-llvm-target/lmc"
 	"github.com/clr1107/lmc-llvm-target/lmc/optimisation"
 	"github.com/llir/llvm/asm"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -51,14 +53,20 @@ func main() {
 			}
 
 			if len(c.Warnings) != 0 {
-				fmt.Printf("Warnings: ")
-				for _, i := range m.Instrs {
-					fmt.Printf("%s, ", i.LLString())
-				}
-				fmt.Printf("\n")
+				var warningBuf strings.Builder
 
 				for _, w := range c.Warnings {
-					fmt.Printf("\t%s\n", w)
+					if w.Level <= comp.Options.Get("WLEVEL").Value.(errors.WarningLevel) {
+						warningBuf.WriteString(fmt.Sprintf("\t%s\n", w))
+					}
+				}
+
+				if warningBuf.Len() > 0 {
+					fmt.Printf("Warnings: ")
+					for _, i := range m.Instrs {
+						fmt.Printf("%s, ", i.LLString())
+					}
+					fmt.Printf("\n%s", warningBuf.String())
 				}
 			}
 

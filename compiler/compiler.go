@@ -286,7 +286,7 @@ func (compiler *Compiler) WrapLLInstICmp(instr *ir.InstICmp, dstId lmc.Address) 
 
 func (compiler *Compiler) WrapCompOption(instr *ir.InstCall, globals []*ir.Global) *Compilation {
 	var c Compilation
-	c.Wrapped = &instructions.EmptyWInst{}
+	c.Wrapped = instructions.NewEmptyWInst([]ir.Instruction{instr})
 
 	if len(instr.Args) != 2 {
 		c.Err = errors.E_InvalidOptionSyntax(fmt.Sprintf("expected 2 args, got %d", len(instr.Args)))
@@ -530,22 +530,17 @@ func createPatterns(compiler *Compiler) []Pattern {
 		}
 	}
 
-	simpleWrapperF := func(compiler *Compiler) func(ir.Instruction) *Compilation {
-		return func(instr ir.Instruction) *Compilation {
-			return singleInstWrapper(compiler, instr)
-		}
-	}
-
 	var patterns []Pattern
-	simpleWrapper := simpleWrapperF(compiler)
 
 	for _, v := range []interface{}{
 		&ir.InstAdd{}, &ir.InstSub{}, &ir.InstMul{}, &ir.InstSDiv{}, &ir.InstSRem{}, &ir.InstURem{}, &ir.InstAlloca{},
 		&ir.InstLoad{}, &ir.InstStore{}, &ir.InstCall{}, &ir.InstBitCast{}, &ir.InstICmp{},
 	} {
 		patterns = append(patterns, &singlePattern{
-			matcher:     simpleMatcherF(reflect.TypeOf(v)),
-			wrapperFunc: simpleWrapper,
+			matcher: simpleMatcherF(reflect.TypeOf(v)),
+			wrapperFunc: func(instr ir.Instruction) *Compilation {
+				return singleInstWrapper(compiler, instr)
+			},
 		})
 	}
 
@@ -618,7 +613,7 @@ func (e *Engine) FindAll(instrs []ir.Instruction) ([]*Match, error) {
 
 			for _, ff := range f {
 				if _, ok := used[ff]; ok {
-					break foundLoop
+					continue foundLoop
 				}
 
 				ii = append(ii, instrs[ff])
