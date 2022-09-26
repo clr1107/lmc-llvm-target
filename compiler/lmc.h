@@ -18,6 +18,12 @@ extern void __lmc_option__(const char *, number_t);
 #define __lmc_option__(k, v) (assert_int_constant((v)), __lmc_option__((k), (v)))
 #define __lmc_attribute__(v) __attribute__ ((annotate("___lmc__" v "___")))
 
+#define O_NONE      0
+#define O_THRASHING 1
+#define O_CLEAN     2
+#define O_BPROP     4
+#define O_ALL       7
+
 // Entry point.
 void _lmc(void);
 

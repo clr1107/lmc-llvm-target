@@ -56,7 +56,7 @@ func main() {
 				var warningBuf strings.Builder
 
 				for _, w := range c.Warnings {
-					if w.Level <= comp.Options.Get("WLEVEL").Value.(errors.WarningLevel) {
+					if w.Level <= errors.WarningLevel(comp.Options.Get("WLEVEL").Value.(int)) {
 						warningBuf.WriteString(fmt.Sprintf("\t%s\n", w))
 					}
 				}
@@ -85,9 +85,21 @@ func main() {
 	fmt.Printf("\nUnoptimised %d instrs, %d defs:\n%s\n", len(comp.Prog.Memory.InstructionsList.Instructions), len(comp.Prog.Memory.InstructionsList.DefInstructions), comp.Prog)
 	fmt.Printf("\n\n")
 
-	optimiser := optimisation.NewStackingOptimiser(comp.Prog, []optimisation.OStrategy{
-		optimisation.BProp, optimisation.Thrashing,
-	})
+	var strategies []optimisation.OStrategy
+
+	optValue := optimisation.OStrategy(comp.Options.Get("OPT").Value.(int))
+	for l := 0; l <= 3; l++ {
+		mask := (optValue >> l) & 1
+		if mask == 1 {
+			if l == 0 {
+				strategies = append(strategies, optimisation.OStrategy(1))
+			} else {
+				strategies = append(strategies, optimisation.OStrategy(2<<(l-1)))
+			}
+		}
+	}
+
+	optimiser := optimisation.NewStackingOptimiser(comp.Prog, strategies)
 
 	if err := optimiser.Optimise(); err != nil {
 		fmt.Printf("could not optimise program: %s\n", err)

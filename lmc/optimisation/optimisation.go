@@ -9,7 +9,7 @@ import (
 type OStrategy uint
 
 const (
-	Thrashing OStrategy = iota
+	Thrashing OStrategy = 1 << iota
 	Clean
 	BProp
 	Chaining

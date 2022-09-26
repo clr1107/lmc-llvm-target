@@ -5,6 +5,7 @@ import (
 	"github.com/clr1107/lmc-llvm-target/compiler/errors"
 	"github.com/clr1107/lmc-llvm-target/compiler/instructions"
 	"github.com/clr1107/lmc-llvm-target/lmc"
+	"github.com/clr1107/lmc-llvm-target/lmc/optimisation"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/value"
@@ -39,6 +40,7 @@ func NewOptions() *Options {
 
 	o.validKeys = []string{
 		"WLEVEL",
+		"OPT",
 	}
 
 	return &o
@@ -116,12 +118,13 @@ func (compiler *Compiler) setDefaultOptions() {
 	setAndPredicateF := func(key string, val interface{}, predicate func(interface{}) bool) {
 		if opt := compiler.Options.Set(key, val); opt != nil {
 			opt.Predicate = func(x interface{}) bool {
-				return reflect.TypeOf(x).ConvertibleTo(reflect.TypeOf(0)) && predicate(x)
+				return reflect.TypeOf(x).Kind() == reflect.Int && predicate(x)
 			}
 		}
 	}
 
 	setAndPredicateF("WLEVEL", errors.L_Default, func(x interface{}) bool { return x.(int) >= 0 && x.(int) <= 2 })
+	setAndPredicateF("OPT", optimisation.OStrategy(7), func(x interface{}) bool { return true }) // defaults to all opts
 }
 
 func (compiler *Compiler) GetTempBox() *lmc.MemoryOp {
