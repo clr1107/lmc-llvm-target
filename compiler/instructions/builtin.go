@@ -144,7 +144,7 @@ func NewBuiltinStaInstr() *BuiltinStaInstr {
 	return &BuiltinStaInstr{
 		BuiltinBase{
 			id:         B_Sta,
-			name:       "_sta",
+			name:       "sta",
 			parameters: 1,
 		},
 	}
@@ -199,15 +199,15 @@ func (b *BuiltinUnaryInstrFunc) Call(params []*lmc.Mailbox) *BuiltinReturn {
 }
 
 func NewBuiltinOutInstr() *BuiltinUnaryInstrFunc {
-	return NewBuiltinInstrFunc(B_Out, "_out", lmc.NewOutputInstr())
+	return NewBuiltinInstrFunc(B_Out, "out", lmc.NewOutputInstr())
 }
 
 func NewBuiltinInpInstr() *BuiltinUnaryInstrFunc {
-	return NewBuiltinInstrFunc(B_Inp, "_inp", lmc.NewInputInstr())
+	return NewBuiltinInstrFunc(B_Inp, "inp", lmc.NewInputInstr())
 }
 
 func NewBuiltinHltInstr() *BuiltinUnaryInstrFunc {
-	return NewBuiltinInstrFunc(B_Hlt, "_hlt", lmc.NewHaltInstr())
+	return NewBuiltinInstrFunc(B_Hlt, "hlt", lmc.NewHaltInstr())
 }
 
 // ---------- WBuiltinCall ----------

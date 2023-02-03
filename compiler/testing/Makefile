@@ -5,7 +5,7 @@
 CC = clang
 CCFLAGS = -emit-llvm -nostdlib -S -I../ -O0
 
-COMPILED = ll/simple_example.ll
+COMPILED = ll/simple_example.ll ll/test.ll
 
 ll/%.ll: c/%.c
 	$(CC) $< $(CCFLAGS) -o $@

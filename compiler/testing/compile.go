@@ -87,7 +87,7 @@ func main() {
 
 	var strategies []optimisation.OStrategy
 
-	optValue := optimisation.OStrategy(comp.Options.Get("OPT").Value.(int))
+	optValue := comp.Options.Get("OPT").Value.(optimisation.OStrategy)
 	for l := 0; l <= 3; l++ {
 		mask := (optValue >> l) & 1
 		if mask == 1 {
